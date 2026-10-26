@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f4f5f1" />
+  <title>ADP · Tile and shape concepts</title>
+  <style>
+    :root{font-family:Arial,Helvetica,sans-serif;color:#172b3b;background:#edf0ed;font-synthesis:none;text-rendering:optimizeLegibility}*{box-sizing:border-box}body{margin:0}.top{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:14px clamp(20px,4vw,64px);background:#123d32;color:#fff}.top strong{font-size:13px;letter-spacing:.03em}.top small{display:block;margin-top:4px;color:#d2e0d8;font-size:10px}.preview-label{padding:7px 10px;border:1px solid #91aea0;border-radius:3px;color:#eff7f1;font-size:10px}.main{max-width:1360px;margin:0 auto;padding:32px clamp(20px,4vw,64px) 46px}.intro{display:flex;justify-content:space-between;align-items:end;gap:28px;margin-bottom:22px}.eyebrow{margin:0 0 8px;color:#416d54;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.intro h1{margin:0;color:#1a3529;font-family:Georgia,serif;font-size:clamp(30px,4vw,42px);font-weight:500;letter-spacing:-.7px}.intro p{max-width:450px;margin:0;color:#5b6a61;font-size:12px;line-height:1.65}.concepts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.concept{min-width:0;padding:16px;background:#fafbf8;border:1px solid #d6ded7}.concept-head{display:flex;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid #e0e6e0}.concept-head h2{margin:0;color:#193b2e;font-size:15px}.concept-head p{margin:4px 0 0;color:#68766e;font-size:10px;line-height:1.5}.code{flex:0 0 auto;align-self:flex-start;color:#8b713f;font-size:9px;font-weight:700;letter-spacing:.08em}.samples{display:grid;gap:9px;margin-top:12px}.topic{display:grid;grid-template-columns:1fr auto;gap:8px 12px;min-height:94px;padding:13px 14px;background:#fff}.topic h3{margin:0 0 5px;color:#233c2e;font-size:12px}.topic p{margin:0;color:#56655b;font-size:10px;line-height:1.5}.topic b{display:block;align-self:start;padding:6px 8px;background:#eef2ec;color:#355843;font-size:10px;font-weight:700}.topic small{grid-column:1/-1;color:#7a6850;font-size:9px}.workflow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.step{min-width:0;padding:9px 10px;background:#f0f3ee;color:#31493a}.step span{display:block;margin-bottom:5px;color:#78663e;font-size:8px;font-weight:700;letter-spacing:.08em}.step strong{display:block;font-size:9px;line-height:1.4}.note{margin:14px 0 0;padding-top:10px;border-top:1px solid #e0e6e0;color:#637168;font-size:9px;line-height:1.5}
+    /* A · Formal panels */
+    .formal .topic{border:1px solid #d7e0d8;border-left:4px solid #4e7658;border-radius:0}.formal .topic:nth-child(2){border-left-color:#668398}.formal .topic:nth-child(3){border-left-color:#9a8358}.formal .topic b{border-radius:0}.formal .step{border:1px solid #d8e0d8;border-top:2px solid #54785c;border-radius:0}
+    /* B · Soft corners */
+    .soft .topic{border:1px solid #dbe3dc;border-radius:9px;background:#fff;box-shadow:0 2px 7px #263c2e0a}.soft .topic:nth-child(2){background:#f4f7f4}.soft .topic:nth-child(3){background:#f7f5ef}.soft .topic b{border-radius:20px;background:#edf3ed}.soft .step{border:1px solid #dce4dc;border-radius:8px;background:#fff}.soft .step:nth-child(2){background:#f1f5f6}.soft .step:nth-child(3){background:#f7f4ed}
+    /* C · Editorial rows */
+    .editorial .samples{gap:0;border-top:1px solid #dce3dc}.editorial .topic{grid-template-columns:32px 1fr auto;align-items:start;min-height:0;padding:12px 2px;border:0;border-bottom:1px solid #dce3dc;background:transparent}.editorial .topic::before{grid-row:1/3;content:attr(data-index);color:#8a7449;font-family:Georgia,serif;font-size:14px}.editorial .topic h3{margin-bottom:4px}.editorial .topic b{grid-column:3;grid-row:1/3;padding:4px 0;background:transparent;color:#355843;white-space:nowrap}.editorial .topic small{grid-column:2/-1;margin-top:2px}.editorial .workflow{grid-template-columns:1fr;gap:0;margin-top:13px;border-top:1px solid #dce3dc}.editorial .step{display:grid;grid-template-columns:92px 1fr;gap:4px 10px;padding:9px 2px;border:0;border-bottom:1px solid #dce3dc;background:transparent}.editorial .step span{grid-row:1/3;margin:0;padding-top:2px}.editorial .step strong{font-size:10px}.editorial .step:nth-child(2),.editorial .step:nth-child(3){background:transparent}
+    @media(max-width:1000px){.concepts{grid-template-columns:1fr}.concept{display:grid;grid-template-columns:minmax(180px,.65fr) minmax(0,1.35fr);gap:16px}.concept-head{display:block;border:0;padding:0}.samples{margin:0}.workflow{grid-column:2}.note{grid-column:2}}
+    @media(max-width:600px){.top{align-items:flex-start;flex-direction:column}.main{padding-top:23px}.intro{align-items:flex-start;flex-direction:column;gap:10px}.concept{display:block}.samples{margin-top:12px}.workflow,.note{grid-column:auto}.editorial .topic{grid-template-columns:26px 1fr auto}.editorial .step{grid-template-columns:75px 1fr}}
+  </style>
+</head>
+<body>
+  <header class="top"><div><strong>ADP · TILE AND SHAPE STUDIES</strong><small>Visual direction preview · design only</small></div><span class="preview-label">Homepage tile concepts</span></header>
+  <main class="main">
+    <div class="intro"><div><p class="eyebrow">Shape and layout exploration</p><h1>How should information tiles feel?</h1></div><p>Compare three restrained treatments for public data examples and the connected workflow. Each keeps the same information so the shape and layout are easy to judge.</p></div>
+    <section class="concepts" aria-label="Tile style concepts">
+      <article class="concept formal">
+        <header class="concept-head"><div><h2>Formal panels</h2><p>Square corners, clear borders and a slim subject marker.</p></div><span class="code">A · PORTAL</span></header>
+        <div class="samples">
+          <article class="topic"><div><h3>Monsoon rainfall</h3><p>Observed rainfall and normal by month and state.</p></div><b>765.8 mm</b><small>IMD · Jun–Sep 2015</small></article>
+          <article class="topic"><div><h3>Consumer prices</h3><p>Compare rural and urban inflation by group.</p></div><b>−2.34 pp</b><small>MoSPI · Jan 2025</small></article>
+          <article class="topic"><div><h3>School indicators</h3><p>Review schools, enrolment and pupil–teacher ratios.</p></div><b>248.0 M</b><small>UDISE+ · 2023–24</small></article>
+        </div>
+        <div class="workflow"><div class="step"><span>01 · PREPARE</span><strong>Check columns and units</strong></div><div class="step"><span>02 · ANALYZE</span><strong>Compare a useful measure</strong></div><div class="step"><span>03 · PRESENT</span><strong>Explain the result</strong></div></div>
+        <p class="note">Best fit when the page should feel official, ordered and easy to scan.</p>
+      </article>
+      <article class="concept soft">
+        <header class="concept-head"><div><h2>Soft corners</h2><p>Small radius, quiet surfaces and separated content groups.</p></div><span class="code">B · FRIENDLY</span></header>
+        <div class="samples">
+          <article class="topic"><div><h3>Monsoon rainfall</h3><p>Observed rainfall and normal by month and state.</p></div><b>765.8 mm</b><small>IMD · Jun–Sep 2015</small></article>
+          <article class="topic"><div><h3>Consumer prices</h3><p>Compare rural and urban inflation by group.</p></div><b>−2.34 pp</b><small>MoSPI · Jan 2025</small></article>
+          <article class="topic"><div><h3>School indicators</h3><p>Review schools, enrolment and pupil–teacher ratios.</p></div><b>248.0 M</b><small>UDISE+ · 2023–24</small></article>
+        </div>
+        <div class="workflow"><div class="step"><span>01 · PREPARE</span><strong>Check columns and units</strong></div><div class="step"><span>02 · ANALYZE</span><strong>Compare a useful measure</strong></div><div class="step"><span>03 · PRESENT</span><strong>Explain the result</strong></div></div>
+        <p class="note">Best fit when the page should feel approachable while retaining a formal structure.</p>
+      </article>
+      <article class="concept editorial">
+        <header class="concept-head"><div><h2>Editorial rows</h2><p>Open layout, numbered rails and fewer boxed shapes.</p></div><span class="code">C · INFORMATION</span></header>
+        <div class="samples">
+          <article class="topic" data-index="01"><div><h3>Monsoon rainfall</h3><p>Observed rainfall and normal by month and state.</p></div><b>765.8 mm</b><small>IMD · Jun–Sep 2015</small></article>
+          <article class="topic" data-index="02"><div><h3>Consumer prices</h3><p>Compare rural and urban inflation by group.</p></div><b>−2.34 pp</b><small>MoSPI · Jan 2025</small></article>
+          <article class="topic" data-index="03"><div><h3>School indicators</h3><p>Review schools, enrolment and pupil–teacher ratios.</p></div><b>248.0 M</b><small>UDISE+ · 2023–24</small></article>
+        </div>
+        <div class="workflow"><div class="step"><span>01 · PREPARE</span><strong>Check columns and units</strong></div><div class="step"><span>02 · ANALYZE</span><strong>Compare a useful measure</strong></div><div class="step"><span>03 · PRESENT</span><strong>Explain the result</strong></div></div>
+        <p class="note">Best fit when the homepage should show more information with less tile framing.</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

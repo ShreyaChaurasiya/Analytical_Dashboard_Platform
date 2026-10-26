@@ -3053,6 +3053,49 @@ html[data-adp-theme="dark"] .empty-panel-body p,
 html[data-adp-theme="dark"] .metric-card small { color: #b7c7bc; }
 .reports-page { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 56px 0 80px; }.reports-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }.reports-heading h1 { margin: 0 0 10px; color: #132238; font-size: clamp(30px, 4vw, 42px); }.reports-heading p:last-child { margin: 0; color: #64748b; font-size: 16px; }.reports-back-link { display: inline-flex; align-items: center; min-height: 40px; padding: 0 13px; border: 1px solid #c9d8e6; border-radius: 6px; color: #1b8062; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }.reports-back-link:hover { background: #eaf6f0; }.reports-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }.reports-summary > div { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid #e0e8f1; border-radius: 8px; background: #fff; }.reports-summary span { color: #718198; font-size: 12px; }.reports-summary strong { color: #1d3652; font-size: 24px; }.reports-list { display: flex; flex-direction: column; gap: 12px; }.report-card { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 18px; border: 1px solid #e0e8f1; border-radius: 8px; background: #fff; }.report-card-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 7px; background: #e7f4ee; color: #1b8062; font-size: 19px; }.report-card-type { color: #1b8062; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }.report-card h2 { margin: 5px 0 4px; color: #1d3652; font-size: 16px; }.report-card p { margin: 0; color: #8190a2; font-size: 11px; }.report-ready { padding: 5px 9px; border-radius: 12px; background: #e5f5ed; color: #1b8062; font-size: 10px; font-weight: 700; }.report-card-actions { display: flex; gap: 8px; }.report-card-actions button, .report-card-actions a { padding: 8px 10px; border: 1px solid #cbd9e7; border-radius: 5px; background: #fff; color: #42617e; font: inherit; font-size: 11px; font-weight: 700; text-decoration: none; cursor: pointer; }.report-card-actions a { border-color: #1b8062; color: #1b8062; }.report-card-actions button:hover, .report-card-actions a:hover { background: #edf7f3; }
 .reports-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; padding: 30px; border: 1px dashed #cad9e6; border-radius: 9px; background: #fbfdff; text-align: center; }.reports-empty-icon { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 15px; border-radius: 50%; background: #e8f4f8; color: #347e9f; font-size: 20px; font-weight: 800; }.reports-empty h2 { margin: 0 0 8px; color: #2a4661; font-size: 19px; }.reports-empty p { max-width: 430px; margin: 0 0 18px; color: #7f91a4; font-size: 13px; line-height: 1.6; }
+/* Keep registration contained in the available viewport. */
+.auth-layout:has(.registration-page) .site-header { display: none; }
+.auth-layout:has(.registration-page) { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+.auth-layout:has(.registration-page) .site-footer { display: none; }
+.auth-layout:has(.registration-page) .layout-content { min-height: 0; overflow: hidden; }
+.registration-page { flex: 1; min-height: 0; align-items: center; padding: 8px 16px; overflow: hidden; }
+.registration-card { width: min(100%, 860px); max-height: 100%; padding: 12px 24px; }
+.registration-header { margin-bottom: 8px; }
+.registration-header h1 { margin-bottom: 2px; font-size: clamp(23px, 2.5vw, 28px); }
+.registration-header .login-description { margin-bottom: 8px; }
+.registration-form { gap: 8px; }
+.registration-account-type { padding: 8px 12px; }
+.registration-account-type legend { margin-top: 0; }
+.registration-choice { min-height: 44px; padding: 6px 10px; }
+.registration-choice small { display: none; }
+.registration-fields { gap: 7px 12px; }
+.registration-field input, .registration-field select, .registration-field textarea { min-height: 34px; margin-top: 3px; padding: 6px 9px; }
+.registration-field textarea { min-height: 42px; }
+.registration-identity { padding: 8px 11px; }
+.registration-account-note { padding: 7px 10px; font-size: 11px; }
+.registration-button { min-height: 38px; }
+.registration-signin { margin-top: 7px; }
+@media (max-height: 820px) {
+  .registration-card { padding-top: 8px; padding-bottom: 8px; }
+  .registration-header { margin-bottom: 5px; }
+  .registration-header .login-description { margin-bottom: 5px; }
+  .registration-form { gap: 6px; }
+  .registration-account-type { padding-top: 6px; padding-bottom: 6px; }
+  .registration-fields { gap: 5px 12px; }
+  .registration-field textarea { min-height: 34px; }
+  .registration-identity { padding-top: 6px; padding-bottom: 6px; }
+  .registration-account-note { margin: 2px 0; }
+  .registration-signin { margin-top: 4px; }
+}
+@media (max-width: 640px) {
+  .auth-layout:has(.registration-page) { height: auto; min-height: 100vh; overflow: visible; }
+  .auth-layout:has(.registration-page) .layout-content { overflow: visible; }
+  .registration-page { min-height: 100vh; padding: 6px 8px; overflow: visible; }
+  .registration-card { padding: 10px 14px; }
+  .registration-choice-row { flex-direction: column; gap: 7px; }
+  .registration-fields, .registration-identity-fields { grid-template-columns: minmax(0, 1fr); }
+  .registration-field-wide { grid-column: auto; }
+}
 @media (max-width: 900px) {
   .site-header-main { flex-wrap: wrap; padding: 12px 20px; }
   .site-brand { min-width: 0; flex: 1; }

@@ -93,7 +93,6 @@ function Registration() {
         <main className="registration-page">
             <section className="registration-card" aria-labelledby="registration-heading">
                 <header className="registration-header">
-                    <p className="login-eyebrow">ANALYTICAL DASHBOARD PLATFORM</p>
                     <h1 id="registration-heading">Create your account</h1>
                     <p className="login-description"> Fields marked <span aria-hidden="true">*</span> are required.</p>
                 </header>
