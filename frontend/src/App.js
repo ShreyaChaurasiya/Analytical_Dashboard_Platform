@@ -9,27 +9,45 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Reports from "./pages/Reports";
+import About from "./pages/About";
+import Help from "./pages/Help";
 import "./App.css";
+
+function isAuthenticated() {
+  try {
+    return window.localStorage.getItem("adp-authenticated") === "true";
+  } catch {
+    return false;
+  }
+}
+
+function ProtectedRoute({ children }) {
+  return isAuthenticated() ? children : <Navigate to="/registration" replace />;
+}
+
+function PublicOnlyRoute({ children }) {
+  return isAuthenticated() ? <Navigate to="/" replace /> : children;
+}
 
 function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/upload" element={<Upload />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/help" element={<section className="info-page"><p className="dashboard-eyebrow">SUPPORT</p><h1>Help</h1><p>To get started, open Dashboard, upload a dataset, or download the CSV template to prepare your data.</p><a href="mailto:support@example.com">Contact support</a></section>} />
-        <Route path="/about" element={<section className="info-page"><p className="dashboard-eyebrow">ABOUT THE PLATFORM</p><h1>Analytical Dashboard Platform</h1><p>A platform from C-DAC, Delhi to help make data analysis and reporting more accessible.</p></section>} />
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+        <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
       </Route>
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
         <Route path="/login/otp" element={<LoginOtp />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
-        <Route path="/register" element={<Registration />} />
-        <Route path="/registration" element={<Registration />} />
+        <Route path="/register" element={<PublicOnlyRoute><Registration /></PublicOnlyRoute>} />
+        <Route path="/registration" element={<PublicOnlyRoute><Registration /></PublicOnlyRoute>} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={isAuthenticated() ? "/" : "/registration"} replace />} />
     </Routes>
   );
 }

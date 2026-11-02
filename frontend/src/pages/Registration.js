@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { apiRequest } from "../api/client";
 
 const initialForm = {
     accountType: "",
@@ -43,6 +44,7 @@ function Registration() {
             fullName: form.fullName.trim(),
             email: form.email.trim().toLowerCase(),
             phone: form.phone.trim(),
+            dateOfBirth: form.dateOfBirth || null,
             organization: form.organization.trim() || null,
             jobTitle: form.jobTitle.trim() || null,
             address: form.address.trim() || null,
@@ -51,25 +53,13 @@ function Registration() {
         };
 
         try {
-            const response = await fetch("/api/auth/register", {
+            await apiRequest("/api/auth/register", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
-            if (!(response.headers.get("content-type") || "").includes("application/json")) {
-                throw new Error("Registration service is not connected yet. Your details have not been saved.");
-            }
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(result.detail || "We could not submit your registration. Please try again.");
-            }
             setSubmitted(true);
         } catch (submitError) {
-            setError(
-                submitError instanceof TypeError
-                    ? "Registration service is not connected yet. Your details have not been saved."
-                    : submitError.message
-            );
+            setError(submitError.message || "We could not submit your registration. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -82,7 +72,7 @@ function Registration() {
                     <div className="registration-success-icon" aria-hidden="true">✓</div>
                     <p className="login-eyebrow">REGISTRATION RECEIVED</p>
                     <h1 id="registration-success-heading">Thanks, {form.fullName.trim().split(" ")[0]}.</h1>
-                    <p className="login-description" role="status">Your registration request was submitted. Taking you to login…</p>
+                    <p className="login-description" role="status">Your account is ready. Check {form.email.trim()} for your username and temporary password. The temporary password expires after 24 hours; change it after signing in.</p>
                     <Link className="registration-button registration-button-link" to="/login">Go to login now</Link>
                 </section>
             </main>
@@ -125,7 +115,7 @@ function Registration() {
                         </label>
                         <label className="registration-field" htmlFor="registration-phone">
                             <span className="registration-field-label">Phone number <span aria-hidden="true">*</span></span>
-                            <input id="registration-phone" name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={updateField} placeholder="+91 98765 43210" maxLength={20} pattern="[+0-9() .-]{7,20}" title="Enter a valid phone number" required />
+                            <input id="registration-phone" name="phone" type="tel" autoComplete="tel" value={form.phone} onChange={updateField} placeholder="+91 98765 43210" minLength={7} maxLength={20} title="Enter a phone number with 7 to 20 characters" required />
                         </label>
                         <label className="registration-field" htmlFor="registration-dob">
                             Date of birth <span className="registration-optional">(optional)</span>
@@ -169,7 +159,7 @@ function Registration() {
                         <p className="registration-privacy-note">Do not enter government ID numbers or upload identity documents here.</p>
                     </details>
 
-                    <p className="registration-account-note">Your account uses the User role. A user ID and temporary password are issued separately; you can change the password after signing in.</p>
+                    <p className="registration-account-note">Your username and temporary password will be emailed after registration. Change the temporary password after your first sign in.</p>
                     {error && <p className="registration-error" role="alert">{error}</p>}
                     <button className="registration-button" type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting…" : "Submit registration"}

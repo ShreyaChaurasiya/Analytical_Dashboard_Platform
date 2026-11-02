@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const sampleCsv = [
     "Month,Observed rainfall (mm),Normal rainfall (mm),Departure from normal (%)",
@@ -22,8 +22,13 @@ const quickStart = [
 
 function Header({ variant = "app" }) {
     const { pathname } = useLocation();
+    const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        try { return window.localStorage.getItem("adp-authenticated") === "true"; }
+        catch { return false; }
+    });
     const [textSize, setTextSize] = useState(() => {
         try { return window.localStorage.getItem("adp-text-size") || "default"; }
         catch { return "default"; }
@@ -42,6 +47,19 @@ function Header({ variant = "app" }) {
         } catch { /* The controls remain usable if browser storage is disabled. */ }
     }, [textSize, darkMode]);
 
+    useEffect(() => {
+        const refreshAuthState = () => {
+            try { setIsAuthenticated(window.localStorage.getItem("adp-authenticated") === "true"); }
+            catch { setIsAuthenticated(false); }
+        };
+        window.addEventListener("storage", refreshAuthState);
+        window.addEventListener("adp-auth-changed", refreshAuthState);
+        return () => {
+            window.removeEventListener("storage", refreshAuthState);
+            window.removeEventListener("adp-auth-changed", refreshAuthState);
+        };
+    }, []);
+
     const navItems = [
         { label: "Home", to: "/" },
         { label: "Dashboard", to: "/dashboard" },
@@ -52,6 +70,14 @@ function Header({ variant = "app" }) {
     const closeMenus = () => {
         setIsMenuOpen(false);
         setIsDownloadOpen(false);
+    };
+
+    const handleLogout = () => {
+        try { window.localStorage.removeItem("adp-authenticated"); }
+        catch { /* Continue to the login page if storage is unavailable. */ }
+        window.dispatchEvent(new Event("adp-auth-changed"));
+        closeMenus();
+        navigate("/login", { replace: true });
     };
 
     return (
@@ -86,8 +112,12 @@ function Header({ variant = "app" }) {
                             <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(quickStart)}`} download="adp-quick-start.txt" role="menuitem" onClick={() => setIsDownloadOpen(false)}>Quick start guide</a>
                         </div>}
                     </div>
-                    <Link className="site-auth-button" to="/login" onClick={closeMenus}>Login</Link>
-                    <Link className="site-auth-button site-auth-button-primary" to="/registration" onClick={closeMenus}>Register</Link>
+                    {!isAuthenticated && <Link className="site-auth-button" to="/login" onClick={closeMenus}>Login</Link>}
+                    {isAuthenticated ? (
+                        <button type="button" className="site-auth-button site-auth-button-primary" onClick={handleLogout}>Logout</button>
+                    ) : (
+                        <Link className="site-auth-button site-auth-button-primary" to="/registration" onClick={closeMenus}>Register</Link>
+                    )}
                 </div>
 
                 <button type="button" className="site-menu-toggle" aria-expanded={isMenuOpen} aria-controls="site-navigation" onClick={() => setIsMenuOpen((open) => !open)}>

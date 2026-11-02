@@ -1,112 +1,118 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
-function makeCode() {
-    const letters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz23456789";
-    let code = "";
-    for (let i = 0; i < 5; i++) {
-        const index = Math.floor(Math.random() * letters.length);
-        code += letters[index];
-    }
-    return code;
-}
+import { apiRequest } from "../api/client";
 
 function LoginOtp() {
     const navigate = useNavigate();
     const location = useLocation();
-    const email = location.state?.email || "your email";
-    const [otp, setOtp] = useState("");
+    const challengeId = location.state?.challengeId;
+    const email = location.state?.email || "your registered email";
+    const [code, setCode] = useState("");
     const [error, setError] = useState("");
-    const [captcha, setCaptcha] = useState(makeCode);
-    const [typed, setTyped] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isResending, setIsResending] = useState(false);
+    const [resendIn, setResendIn] = useState(60);
 
-    function handleOtp(event) {
+    useEffect(() => {
+        if (!challengeId) {
+            navigate("/login", { replace: true });
+        }
+    }, [challengeId, navigate]);
+
+    useEffect(() => {
+        if (resendIn <= 0) return undefined;
+        const timer = window.setTimeout(() => setResendIn((remaining) => remaining - 1), 1000);
+        return () => window.clearTimeout(timer);
+    }, [resendIn]);
+
+    async function handleSubmit(event) {
         event.preventDefault();
         setError("");
 
-        if (!otp.trim()) {
-            setError("Enter the OTP");
+        if (!/^\d{6}$/.test(code.trim())) {
+            setError("Enter the 6-digit code sent to your email");
             return;
         }
 
-        if (otp.trim().length !== 6) {
-            setError("OTP must be 6 digits");
-            return;
+        setIsSubmitting(true);
+        try {
+            const result = await apiRequest("/api/auth/login/verify-otp", {
+                method: "POST",
+                body: JSON.stringify({ challenge_id: challengeId, code: code.trim() }),
+            });
+            window.localStorage.setItem("adp-access-token", result.access_token);
+            window.localStorage.setItem("adp-authenticated", "true");
+            window.dispatchEvent(new Event("adp-auth-changed"));
+            navigate("/", { replace: true });
+        } catch (submitError) {
+            setError(submitError.message || "We could not verify that code. Please try again.");
+        } finally {
+            setIsSubmitting(false);
         }
-
-        if (!typed.trim()) {
-            setError("Enter the captcha");
-            return;
-        }
-
-        if (typed.trim().toUpperCase() !== captcha.toUpperCase()) {
-            setError("Captcha does not match");
-            setTyped("");
-            setCaptcha(makeCode());
-            return;
-        }
-
-        navigate("/");
     }
+
+    async function resendCode() {
+        setError("");
+        setIsResending(true);
+        try {
+            await apiRequest("/api/auth/login/resend-otp", {
+                method: "POST",
+                body: JSON.stringify({ challenge_id: challengeId }),
+            });
+            setCode("");
+            setResendIn(60);
+        } catch (resendError) {
+            setError(resendError.message || "We could not send a new code. Please try again.");
+        } finally {
+            setIsResending(false);
+        }
+    }
+
+    if (!challengeId) return null;
 
     return (
         <main className="login-page">
             <section className="login-card">
                 <button
                     type="button"
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate("/login")}
                     className="back-button"
-                    aria-label="Go back"
+                    aria-label="Return to sign in"
                 >
-                ←
+                    ←
                 </button>
                 <h1>Enter OTP</h1>
-                <form onSubmit={handleOtp}>
-                    <p className="login-signup">We sent a code to {email}.</p>
+                <form onSubmit={handleSubmit}>
+                    <p className="login-signup">We sent a 6-digit code to {email}. The code expires in 10 minutes.</p>
                     <label>
-                        OTP
+                        Email verification code
                         <input
                             type="text"
                             inputMode="numeric"
+                            autoComplete="one-time-code"
                             maxLength={6}
+                            pattern="[0-9]{6}"
                             placeholder="Enter the 6-digit code"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
+                            value={code}
+                            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                            required
                         />
                     </label>
-                    <label>
-                        Enter Captcha
-                        <span className="captcha-code">{captcha.split("").join(" ")}</span>
-                        <span className="captcha-input">
-                            <input
-                                type="text"
-                                placeholder="Enter captcha"
-                                value={typed}
-                                onChange={(e) => setTyped(e.target.value)}
-                            />
-                            <button
-                                type="button"
-                                aria-label="New captcha"
-                                onClick={() => {
-                                    setCaptcha(makeCode());
-                                    setTyped("");
-                                }}
-                            >
-                                ↻
-                            </button>
-                        </span>
-                    </label>
-                    {error && <p className="login-error">{error}</p>}
-                    <button className="login-submit" type="submit">Verify</button>
+                    {error && <p className="login-error" role="alert">{error}</p>}
+                    <button className="login-submit" type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? "Verifying…" : "Verify"}
+                    </button>
                     <button
                         type="button"
                         className="login-resend"
-                        onClick={() => {
-                            setOtp("");
-                            setError("");
-                        }}
+                        onClick={resendCode}
+                        disabled={isResending || resendIn > 0}
                     >
-                        Resend OTP
+                        {isResending
+                            ? "Sending…"
+                            : resendIn > 0
+                                ? `Resend code in ${resendIn}s`
+                                : "Resend code"}
                     </button>
                 </form>
             </section>
