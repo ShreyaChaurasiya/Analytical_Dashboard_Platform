@@ -1,9 +1,20 @@
 """Validated request and response shapes for user registration."""
 
+import re
 from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+
+def _validate_password_strength(value: str) -> str:
+    if (
+        not re.search(r"[A-Za-z]", value)
+        or not re.search(r"\d", value)
+        or not re.search(r"[^A-Za-z0-9]", value)
+    ):
+        raise ValueError("Password must include a letter, a number, and a special character.")
+    return value
 
 
 class RegistrationCreate(BaseModel):
@@ -104,6 +115,39 @@ class PasswordChangeRequest(BaseModel):
     current_password: str = Field(min_length=8, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
 
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        return _validate_password_strength(value)
+
 
 class PasswordChangeResponse(BaseModel):
+    message: str
+
+
+class PasswordResetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+
+
+class PasswordResetStartResponse(BaseModel):
+    challenge_id: str
+    message: str
+
+
+class PasswordResetCompleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    challenge_id: str = Field(min_length=20, max_length=64)
+    code: str = Field(pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        return _validate_password_strength(value)
+
+
+class PasswordResetCompleteResponse(BaseModel):
     message: str

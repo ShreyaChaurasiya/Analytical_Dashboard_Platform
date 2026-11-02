@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_db, get_user_for_password_change
 from app.core.security import create_access_token
 from app.models.user import User
 from app.schemas.user import (
@@ -14,14 +14,20 @@ from app.schemas.user import (
     LoginResponse,
     PasswordChangeRequest,
     PasswordChangeResponse,
+    PasswordResetCompleteRequest,
+    PasswordResetCompleteResponse,
+    PasswordResetRequest,
+    PasswordResetStartResponse,
     RegistrationCreate,
     RegistrationResponse,
 )
 from app.services.auth_service import (
     authenticate_user,
     change_password,
+    complete_password_reset,
     register_user,
     resend_login_code,
+    start_password_reset,
     start_login_challenge,
     verify_login_code,
 )
@@ -134,10 +140,50 @@ def resend_login_otp(
     return LoginOtpResendResponse(message="A new sign-in code was sent to your email.")
 
 
+@router.post("/password/forgot", response_model=PasswordResetStartResponse)
+def forgot_password(
+    payload: PasswordResetRequest,
+    db: Session = Depends(get_db),
+) -> PasswordResetStartResponse:
+    try:
+        challenge_id = start_password_reset(db, str(payload.email))
+    except EmailDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+
+    return PasswordResetStartResponse(
+        challenge_id=challenge_id,
+        message="If an active account uses that email, a password reset code has been sent.",
+    )
+
+
+@router.post("/password/reset", response_model=PasswordResetCompleteResponse)
+def reset_password(
+    payload: PasswordResetCompleteRequest,
+    db: Session = Depends(get_db),
+) -> PasswordResetCompleteResponse:
+    try:
+        complete_password_reset(
+            db,
+            challenge_id=payload.challenge_id,
+            code=payload.code,
+            new_password=payload.new_password,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return PasswordResetCompleteResponse(message="Password reset successfully.")
+
+
 @router.post("/change-password", response_model=PasswordChangeResponse)
 def change_user_password(
     payload: PasswordChangeRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_user_for_password_change),
     db: Session = Depends(get_db),
 ) -> PasswordChangeResponse:
     try:

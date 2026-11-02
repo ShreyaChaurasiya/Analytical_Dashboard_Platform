@@ -13,6 +13,7 @@ from app.api.routes.reports import router as reports_router
 from app.core.config import settings
 from app.db.session import Base, engine
 from app.models.login_challenge import LoginChallenge # noqa: F401 - registers the table model
+from app.models.password_reset_challenge import PasswordResetChallenge # noqa: F401 - registers the table model
 from app.models.user import User # noqa: F401 - registers the table model
 
 app = FastAPI(title=settings.app_name)

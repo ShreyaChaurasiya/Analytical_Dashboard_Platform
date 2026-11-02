@@ -43,7 +43,7 @@ function LoginOtp() {
             window.localStorage.setItem("adp-access-token", result.access_token);
             window.localStorage.setItem("adp-authenticated", "true");
             window.dispatchEvent(new Event("adp-auth-changed"));
-            navigate("/", { replace: true });
+            navigate(result.password_reset_required ? "/reset-password" : "/", { replace: true });
         } catch (submitError) {
             setError(submitError.message || "We could not verify that code. Please try again.");
         } finally {

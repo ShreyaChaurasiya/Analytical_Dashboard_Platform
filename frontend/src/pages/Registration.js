@@ -92,7 +92,7 @@ function Registration() {
                         <legend>Who will use the platform?</legend>
                         <div className="registration-choice-row">
                             <label className={`registration-choice${form.accountType === "individual" ? " is-selected" : ""}`}>
-                                <input type="radio" name="accountType" value="individual" checked={form.accountType === "individual"} onChange={updateField} />
+                                <input type="radio" name="accountType" value="individual" checked={form.accountType === "individual"} onChange={updateField} required />
                                 <span className="registration-choice-icon" aria-hidden="true">◉</span>
                                 <span><strong>Individual</strong><small>Register for yourself</small></span>
                             </label>
@@ -159,7 +159,7 @@ function Registration() {
                         <p className="registration-privacy-note">Do not enter government ID numbers or upload identity documents here.</p>
                     </details>
 
-                    <p className="registration-account-note">Your username and temporary password will be emailed after registration. Change the temporary password after your first sign in.</p>
+                    <p className="registration-account-note">Your username and temporary password will be emailed after registration. Email delivery must be configured on the backend. Change the temporary password after your first sign in.</p>
                     {error && <p className="registration-error" role="alert">{error}</p>}
                     <button className="registration-button" type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting…" : "Submit registration"}

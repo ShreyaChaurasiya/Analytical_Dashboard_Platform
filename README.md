@@ -6,8 +6,11 @@ This repository contains the React frontend and FastAPI backend for the Analytic
 
 - Registration emails the username and temporary password to the supplied email address.
 - Users sign in with their username or email and password, then verify a one-time email code to receive a bearer access token.
+- Temporary-password sign-ins must change the password before accessing the platform.
+- Forgot password sends a one-time code to the registered email; the code expires after 10 minutes and allows at most five attempts.
 - Protected API routes require that token.
 - Users can change their password through `POST /api/auth/change-password`; this verifies the current password and clears the temporary-password requirement.
+- Password recovery uses `POST /api/auth/password/forgot` followed by `POST /api/auth/password/reset`.
 
 ## Email setup
 
@@ -19,6 +22,7 @@ This repository contains the React frontend and FastAPI backend for the Analytic
 6. Restart the backend after changing environment values.
 
 The sign-in code expires after 10 minutes, permits at most five verification attempts, and can be resent after a 60-second cooldown.
+Registration, sign-in verification, and password recovery all require working SMTP settings. If they are missing or invalid, the backend returns an explicit email-delivery error and does not complete registration.
 
 ## Project layout
 

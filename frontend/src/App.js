@@ -4,6 +4,7 @@ import AuthLayout from "./layouts/AuthLayout";
 import Login from "./pages/Login";
 import LoginOtp from "./pages/LoginOtp";
 import ForgetPassword from "./pages/ForgetPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Registration from "./pages/Registration";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
@@ -15,14 +16,14 @@ import "./App.css";
 
 function isAuthenticated() {
   try {
-    return window.localStorage.getItem("adp-authenticated") === "true";
+    return Boolean(window.localStorage.getItem("adp-access-token"));
   } catch {
     return false;
   }
 }
 
 function ProtectedRoute({ children }) {
-  return isAuthenticated() ? children : <Navigate to="/registration" replace />;
+  return isAuthenticated() ? children : <Navigate to="/login" replace />;
 }
 
 function PublicOnlyRoute({ children }) {
@@ -44,6 +45,7 @@ function App() {
         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
         <Route path="/login/otp" element={<LoginOtp />} />
         <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ProtectedRoute><ResetPassword /></ProtectedRoute>} />
         <Route path="/register" element={<PublicOnlyRoute><Registration /></PublicOnlyRoute>} />
         <Route path="/registration" element={<PublicOnlyRoute><Registration /></PublicOnlyRoute>} />
       </Route>

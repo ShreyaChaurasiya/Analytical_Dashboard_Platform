@@ -26,7 +26,7 @@ function Header({ variant = "app" }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDownloadOpen, setIsDownloadOpen] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
-        try { return window.localStorage.getItem("adp-authenticated") === "true"; }
+        try { return Boolean(window.localStorage.getItem("adp-access-token")); }
         catch { return false; }
     });
     const [textSize, setTextSize] = useState(() => {
@@ -49,7 +49,7 @@ function Header({ variant = "app" }) {
 
     useEffect(() => {
         const refreshAuthState = () => {
-            try { setIsAuthenticated(window.localStorage.getItem("adp-authenticated") === "true"); }
+            try { setIsAuthenticated(Boolean(window.localStorage.getItem("adp-access-token"))); }
             catch { setIsAuthenticated(false); }
         };
         window.addEventListener("storage", refreshAuthState);
@@ -73,7 +73,10 @@ function Header({ variant = "app" }) {
     };
 
     const handleLogout = () => {
-        try { window.localStorage.removeItem("adp-authenticated"); }
+        try {
+            window.localStorage.removeItem("adp-authenticated");
+            window.localStorage.removeItem("adp-access-token");
+        }
         catch { /* Continue to the login page if storage is unavailable. */ }
         window.dispatchEvent(new Event("adp-auth-changed"));
         closeMenus();

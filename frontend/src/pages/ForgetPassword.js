@@ -1,202 +1,186 @@
-import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { apiRequest } from "../api/client";
 
-function makeCode() {
-    const letters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz23456789";
-    let code = "";
-    for (let i = 0; i < 5; i++) {
-        const index = Math.floor(Math.random() * letters.length);
-        code += letters[index];
-    }
-    return code;
+function isStrongPassword(password) {
+    return password.length >= 8
+        && /[A-Za-z]/.test(password)
+        && /\d/.test(password)
+        && /[^A-Za-z0-9]/.test(password);
 }
 
 function ForgetPassword() {
-    const  navigate = useNavigate();
     const [email, setEmail] = useState("");
-    const [otp, setOtp] = useState("");
+    const [challengeId, setChallengeId] = useState("");
+    const [code, setCode] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] =useState("");
+    const [error, setError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [step, setStep] = useState("email");
-    const [captcha, setCaptcha] = useState(makeCode);
-    const [typed, setTyped] = useState("");
+    const [isComplete, setIsComplete] = useState(false);
 
-    function handleEmail(event){
+    async function requestCode(event) {
         event.preventDefault();
         setError("");
-
-        const value = email.trim();
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if(!value){
-            setError("Enter your email");
-            return;
+        setIsSubmitting(true);
+        try {
+            const result = await apiRequest("/api/auth/password/forgot", {
+                method: "POST",
+                body: JSON.stringify({ email: email.trim().toLowerCase() }),
+            });
+            setChallengeId(result.challenge_id);
+            setCode("");
+            setPassword("");
+            setConfirmPassword("");
+            setStep("code");
+        } catch (requestError) {
+            setError(requestError.message || "We could not send a reset code. Please try again.");
+        } finally {
+            setIsSubmitting(false);
         }
-
-        if(!emailPattern.test(value)){
-            setError("Enter a valid email, such as example@gmail.com");
-            return;
-        }
-
-        const captchaText = typed.trim();
-
-        if (!captchaText) {
-            setError("Enter the captcha");
-            return;
-        }
-
-        if (captchaText.toUpperCase() !== captcha.toUpperCase()) {
-            setError("Captcha does not match");
-            setTyped("");
-            setCaptcha(makeCode());
-            return;
-        }
-
-        setStep("otp");
     }
 
-    function handleOtp(event){
+    function continueToPassword(event) {
         event.preventDefault();
         setError("");
-
-        if(!otp.trim()){
-            setError("Enter the OTP");
+        if (!/^\d{6}$/.test(code.trim())) {
+            setError("Enter the 6-digit code sent to your email.");
             return;
         }
-
-        if(otp.trim().length !== 6){
-            setError("OTP must be 6 digits");
-            return;
-        }
-
-        setStep("reset");
+        setStep("password");
     }
 
-    function handleReset(event) {
+    async function resetPassword(event) {
         event.preventDefault();
         setError("");
-        const secret = password.trim();
-        const hasLetter = /[A-Za-z]/.test(secret);
-        const hasNumber = /[0-9]/.test(secret);
-        const hasSpecial = /[^A-Za-z0-9]/.test(secret);
-        if (!secret) {
-            setError("Enter your new password");
+        if (!isStrongPassword(password)) {
+            setError("Password must include a letter, a number, a special character, and at least 8 characters.");
             return;
         }
-        if (!hasLetter || !hasNumber || !hasSpecial || secret.length < 8) {
-            setError("Password must include a letter, a number, a special character, and at least 8 characters");
+        if (password !== confirmPassword) {
+            setError("Passwords do not match.");
             return;
         }
-        if (secret !== confirmPassword.trim()) {
-            setError("Passwords do not match");
-            return;
-        }
-        navigate("/login");
-    }
 
+        setIsSubmitting(true);
+        try {
+            await apiRequest("/api/auth/password/reset", {
+                method: "POST",
+                body: JSON.stringify({
+                    challenge_id: challengeId,
+                    code: code.trim(),
+                    new_password: password,
+                }),
+            });
+            setIsComplete(true);
+        } catch (resetError) {
+            setError(resetError.message || "We could not reset your password. Request a new code and try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
 
     return (
         <main className="login-page">
             <section className="login-card">
-                <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="back-button"
-                    aria-label="Go back"
-                >
-                ←
-                </button>
-                <h1>Forget Password</h1>
-                {step === "email" && (
-                    <form onSubmit={handleEmail}>
-                        <p className="login-signup">Enter your email to reset your password</p>
-                        <label>
-                            Email
-                            <input
-                            type ="text"
-                            placeholder="example@gmail.com"
-                            value = {email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Enter Captcha
-                            <span className="captcha-code">{captcha.split("").join(" ")}</span>
-                            <span className="captcha-input">
-                                <input
-                                    type="text"
-                                    placeholder="Enter captcha"
-                                    value={typed}
-                                    onChange={(e) => setTyped(e.target.value)}
-                                />
-                                <button
-                                    type="button"
-                                    aria-label="New captcha"
-                                    onClick={() => {
-                                        setCaptcha(makeCode());
-                                        setTyped("");
-                                    }}
-                                >
-                                    ↻
+                <h1>Reset your password</h1>
+                {isComplete ? (
+                    <>
+                        <p className="login-description" role="status">Your password has been updated. You can now sign in with your new password.</p>
+                        <p className="login-signup"><Link to="/login">Return to login</Link></p>
+                    </>
+                ) : (
+                    <>
+                        {step === "email" && (
+                            <form onSubmit={requestCode}>
+                                <p className="login-signup">Enter your account email and we’ll send a reset code if it matches an active account.</p>
+                                <label>
+                                    Email
+                                    <input
+                                        type="email"
+                                        autoComplete="email"
+                                        placeholder="name@example.com"
+                                        value={email}
+                                        onChange={(event) => setEmail(event.target.value)}
+                                        required
+                                    />
+                                </label>
+                                {error && <p className="login-error" role="alert">{error}</p>}
+                                <button className="login-submit" type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? "Sending…" : "Send reset code"}
                                 </button>
-                            </span>
-                        </label>
-                        {error && <p className="login-error">{error}</p>}
-                        <button className="login-submit" type="submit">Send OTP</button>
-                    </form>
-                )}
+                            </form>
+                        )}
 
-                {step === "otp" && (
-                    <form onSubmit={handleOtp}>
-                        <p className="login-signup">We sent a code to {email}.</p>
-                        <label>
-                            OTP
-                            <input
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={6}
-                                placeholder="Enter the 6-digit code"
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                            />
-                        </label>
-                        {error && <p className="login-error">{error}</p>}
-                        <button className="login-submit" type="submit">Verify</button>
-                    </form>
-                )}
+                        {step === "code" && (
+                            <form onSubmit={continueToPassword}>
+                                <p className="login-signup">Enter the 6-digit code sent to {email}.</p>
+                                <label>
+                                    Email verification code
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
+                                        maxLength={6}
+                                        pattern="[0-9]{6}"
+                                        value={code}
+                                        onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                                        required
+                                    />
+                                </label>
+                                {error && <p className="login-error" role="alert">{error}</p>}
+                                <button className="login-submit" type="submit">Continue</button>
+                                <button className="login-resend" type="button" onClick={() => setStep("email")}>
+                                    Request a new code
+                                </button>
+                            </form>
+                        )}
 
-                {step === "reset" && (
-                    <form onSubmit={handleReset}>
-                        <p className="login-signup">Choose a new password.</p>
-                        <label>
-                            New password
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </label>
-                        <label>
-                            Confirm password
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                            />
-                        </label>
-                        {error && <p className="login-error">{error}</p>}
-                        <button className="login-submit" type="submit">Update password</button>
-                    </form>
+                        {step === "password" && (
+                            <form onSubmit={resetPassword}>
+                                <p className="login-signup">Choose a new password. The code is checked when you submit.</p>
+                                <label>
+                                    New password
+                                    <input
+                                        type="password"
+                                        autoComplete="new-password"
+                                        minLength={8}
+                                        maxLength={128}
+                                        value={password}
+                                        onChange={(event) => setPassword(event.target.value)}
+                                        required
+                                    />
+                                </label>
+                                <label>
+                                    Confirm new password
+                                    <input
+                                        type="password"
+                                        autoComplete="new-password"
+                                        minLength={8}
+                                        maxLength={128}
+                                        value={confirmPassword}
+                                        onChange={(event) => setConfirmPassword(event.target.value)}
+                                        required
+                                    />
+                                </label>
+                                {error && <p className="login-error" role="alert">{error}</p>}
+                                <button className="login-submit" type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? "Updating…" : "Update password"}
+                                </button>
+                                <button className="login-resend" type="button" onClick={() => setStep("code")}>
+                                    Change verification code
+                                </button>
+                            </form>
+                        )}
+                    </>
                 )}
-
-                <p className="login-signup">
-                    Back to <Link to="/login">Log In</Link>
-                </p>
+                {!isComplete && (
+                    <p className="login-signup">Back to <Link to="/login">Log in</Link></p>
+                )}
             </section>
         </main>
-    )
+    );
 }
-
 
 export default ForgetPassword;

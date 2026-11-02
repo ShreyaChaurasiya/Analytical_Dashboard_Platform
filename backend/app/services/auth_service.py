@@ -11,8 +11,12 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.login_challenge import LoginChallenge
+from app.models.password_reset_challenge import PasswordResetChallenge
 from app.models.user import RegistrationStatus, User
-from app.schemas.user import RegistrationCreate, RegistrationResponse
+from app.schemas.user import (
+    RegistrationCreate,
+    RegistrationResponse,
+)
 from app.core.security import (
     generate_temporary_password,
     hash_password,
@@ -273,4 +277,97 @@ def change_password(
     user.password_hash = hash_password(new_password)
     user.must_reset_password = False
     user.temporary_password_expires_at = None
+    db.commit()
+
+
+def start_password_reset(db: Session, email: str) -> str:
+    challenge_id = secrets.token_urlsafe(32)
+    normalized_email = email.strip().lower()
+    user = db.scalar(
+        select(User).where(
+            User.email == normalized_email,
+            User.status == RegistrationStatus.APPROVED.value,
+        )
+    )
+    if user is None:
+        return challenge_id
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    now = datetime.now(timezone.utc)
+    challenge = PasswordResetChallenge(
+        id=challenge_id,
+        user_id=user.id,
+        code_hash=_otp_digest(code),
+        expires_at=now + timedelta(minutes=10),
+    )
+    db.add(challenge)
+    db.commit()
+
+    try:
+        send_email(
+            recipient=user.email,
+            subject="Your password reset code",
+            text=(
+                f"Your password reset code is {code}.\n\n"
+                "It expires in 10 minutes. If you did not request this code, "
+                "you can ignore this message."
+            ),
+        )
+    except EmailDeliveryError:
+        db.delete(challenge)
+        db.commit()
+        raise
+
+    return challenge_id
+
+
+def complete_password_reset(
+    db: Session,
+    challenge_id: str,
+    code: str,
+    new_password: str,
+) -> None:
+    challenge = db.scalar(
+        select(PasswordResetChallenge)
+        .where(PasswordResetChallenge.id == challenge_id)
+        .with_for_update()
+    )
+    if challenge is None or challenge.consumed_at is not None:
+        raise ValueError("This password reset code is invalid or has expired.")
+
+    now = datetime.now(timezone.utc)
+    expires_at = challenge.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= now or challenge.attempts >= 5:
+        challenge.consumed_at = now
+        db.commit()
+        raise ValueError("This password reset code is invalid or has expired.")
+
+    if not hmac.compare_digest(challenge.code_hash, _otp_digest(code)):
+        challenge.attempts += 1
+        if challenge.attempts >= 5:
+            challenge.consumed_at = now
+        db.commit()
+        raise ValueError("The password reset code is incorrect.")
+
+    user = db.get(User, challenge.user_id)
+    if user is None or user.status != RegistrationStatus.APPROVED.value:
+        challenge.consumed_at = now
+        db.commit()
+        raise ValueError("This password reset code is invalid or has expired.")
+
+    challenge.consumed_at = now
+    user.password_hash = hash_password(new_password)
+    user.must_reset_password = False
+    user.temporary_password_expires_at = None
+
+    for login_challenge in db.scalars(
+        select(LoginChallenge).where(
+            LoginChallenge.user_id == user.id,
+            LoginChallenge.consumed_at.is_(None),
+        )
+    ):
+        login_challenge.consumed_at = now
+
     db.commit()
