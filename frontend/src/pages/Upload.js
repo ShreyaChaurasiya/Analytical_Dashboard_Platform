@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { apiRequest } from "../api/client";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -44,6 +45,7 @@ function Upload() {
     const [preview, setPreview] = useState(null);
     const [error, setError] = useState("");
     const [isReading, setIsReading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const readFile = async (selectedFile) => {
         setFile(selectedFile || null);
@@ -89,23 +91,24 @@ function Upload() {
         }
     };
 
-    const saveDataset = (event) => {
+    const saveDataset = async (event) => {
         event.preventDefault();
         if (!file || !preview) return;
-        const dataset = {
-            name: file.name,
-            rowCount: preview.rowCount,
-            columnCount: preview.columnCount,
-            missingCells: preview.missingCells,
-            headers: preview.headers,
-            previewRows: preview.rows,
-            uploadedAt: new Date().toISOString(),
-        };
+        setError("");
+        setIsSaving(true);
         try {
-            window.localStorage.setItem("adp-uploaded-dataset", JSON.stringify(dataset));
-            navigate("/dashboard");
-        } catch {
-            setError("This browser could not save the dataset summary. Try a smaller file or enable site storage.");
+            const formData = new FormData();
+            formData.append("file", file);
+            const result = await apiRequest("/api/datasets/upload", {
+                method: "POST",
+                body: formData,
+                token: window.localStorage.getItem("adp-access-token"),
+            });
+            navigate("/dashboard", { state: { datasetId: result.id } });
+        } catch (saveError) {
+            setError(saveError.message || "The dataset could not be uploaded.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -136,9 +139,9 @@ function Upload() {
                     </div>
                     <div className="upload-table-wrap"><table className="home-data-table"><thead><tr>{preview.headers.map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead><tbody>{preview.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((value, columnIndex) => <td key={`${rowIndex}-${columnIndex}`}>{value || <em>Blank</em>}</td>)}</tr>)}</tbody></table></div>
                     {preview.rowCount > preview.rows.length && <p className="upload-preview-note">Showing the first {preview.rows.length} rows. All {preview.rowCount.toLocaleString()} rows are included in the saved file summary.</p>}
-                    <button className="workspace-primary-button" type="submit">Continue to dashboard</button>
+                    <button className="workspace-primary-button" type="submit" disabled={isSaving}>{isSaving ? "Saving dataset…" : "Continue to dashboard"}</button>
                 </section>}
-                <p className="upload-local-note">This starter flow keeps the dataset summary in this browser. Server upload and analysis will need the project API to be completed.</p>
+                <p className="upload-local-note">Your dataset will be saved to your private workspace when you continue.</p>
             </form>
         </section>
     );

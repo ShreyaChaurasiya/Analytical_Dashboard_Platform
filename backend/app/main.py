@@ -12,6 +12,8 @@ from app.api.routes.quality import router as quality_router
 from app.api.routes.reports import router as reports_router
 from app.core.config import settings
 from app.db.session import Base, engine
+from app.models.dataset import Dataset  # noqa: F401 - registers the table model
+from app.models.dataset_version import DatasetVersion  # noqa: F401 - registers the table model
 from app.models.login_challenge import LoginChallenge # noqa: F401 - registers the table model
 from app.models.password_reset_challenge import PasswordResetChallenge # noqa: F401 - registers the table model
 from app.models.user import User # noqa: F401 - registers the table model
@@ -43,6 +45,22 @@ def create_database_tables() -> None:
             text(
                 "ALTER TABLE users "
                 "ADD COLUMN IF NOT EXISTS temporary_password_expires_at TIMESTAMPTZ"
+            )
+        )
+        connection.execute(
+            text(
+                "ALTER TABLE datasets "
+                "ADD COLUMN IF NOT EXISTS owner_id INTEGER "
+                "REFERENCES users(id) ON DELETE CASCADE"
+            )
+        )
+        connection.execute(
+            text("CREATE INDEX IF NOT EXISTS ix_datasets_owner_id ON datasets(owner_id)")
+        )
+        connection.execute(
+            text(
+                "ALTER TABLE dataset_versions "
+                "ADD COLUMN IF NOT EXISTS missing_cells INTEGER"
             )
         )
 @app.get("/api/Check_Status")

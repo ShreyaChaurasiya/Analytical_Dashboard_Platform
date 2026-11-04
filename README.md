@@ -30,3 +30,10 @@ Registration, sign-in verification, and password recovery all require working SM
 - `backend/` — FastAPI application with API, models, schemas, and service modules.
 
 The registration and login screens use the backend authentication API.
+
+## Dataset dashboard
+
+- The dashboard lists datasets owned by the signed-in user. Dataset uploads require the user's access token.
+- On backend startup, SQLAlchemy creates the `datasets` and `dataset_versions` tables. Existing `datasets` tables gain an `owner_id` foreign key; existing rows without an owner remain private and are not shown to users.
+- CSV and TSV uploads are limited to 10 MB. Dataset metadata and version statistics are stored in PostgreSQL; original files are stored under `backend/.data/datasets/`, which is excluded from Git. Keep this directory on persistent storage and include it in backups.
+- Install the backend dependencies with `python -m pip install -r backend/requirements.txt`. The API upload endpoint uses `python-multipart`.
