@@ -34,7 +34,7 @@ function Footer({ variant }) {
 
                 <div className="site-footer-column site-footer-contact">
                     <h2>Contact</h2>
-                    <address>C-DAC, Delhi<br />For account access, use the credentials provided by your platform administrator.</address>
+                    <address>C-DAC, Delhi<br />Create an account or use Forgot password for account access.</address>
                 </div>
             </div>
 

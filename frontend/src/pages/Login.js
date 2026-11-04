@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../api/client";
 
 function Login() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -47,6 +48,9 @@ function Login() {
     return (
         <main className="login-page">
             <section className="login-card">
+                {location.state?.accountNotice && (
+                    <p className="login-account-notice" role="status">{location.state.accountNotice}</p>
+                )}
                 <h1>Log in</h1>
                 <form onSubmit={handleSubmit} autoComplete="off">
                     <label>

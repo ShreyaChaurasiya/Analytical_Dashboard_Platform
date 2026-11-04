@@ -3,41 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { apiRequest } from "../api/client";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-function parseDelimited(text, delimiter) {
-    const rows = [];
-    let row = [];
-    let cell = "";
-    let quoted = false;
-
-    for (let i = 0; i < text.length; i += 1) {
-        const character = text[i];
-        if (character === '"') {
-            if (quoted && text[i + 1] === '"') {
-                cell += '"';
-                i += 1;
-            } else {
-                quoted = !quoted;
-            }
-        } else if (!quoted && character === delimiter) {
-            row.push(cell);
-            cell = "";
-        } else if (!quoted && (character === "\n" || character === "\r")) {
-            if (character === "\r" && text[i + 1] === "\n") i += 1;
-            row.push(cell);
-            if (row.some((value) => value.trim() !== "")) rows.push(row);
-            row = [];
-            cell = "";
-        } else {
-            cell += character;
-        }
-    }
-
-    if (quoted) throw new Error("The file has an unclosed quotation mark.");
-    row.push(cell);
-    if (row.some((value) => value.trim() !== "")) rows.push(row);
-    return rows;
-}
+const SUPPORTED_EXTENSIONS = [
+    "csv", "tsv", "txt", "xlsx", "xls", "ods", "json", "jsonl", "xml",
+    "parquet", "feather", "orc", "avro", "sas7bdat", "xpt", "sav", "dta",
+    "dbf", "geojson", "sqlite", "sqlite3", "db", "ndjson",
+];
 
 function Upload() {
     const navigate = useNavigate();
@@ -54,8 +24,8 @@ function Upload() {
         if (!selectedFile) return;
 
         const extension = selectedFile.name.split(".").pop().toLowerCase();
-        if (!["csv", "tsv"].includes(extension)) {
-            setError("Choose a .csv or .tsv file. Excel workbooks are not supported by this upload screen yet.");
+        if (!SUPPORTED_EXTENSIONS.includes(extension)) {
+            setError("Choose one of the supported data formats shown below.");
             return;
         }
         if (selectedFile.size > MAX_FILE_SIZE) {
@@ -69,21 +39,21 @@ function Upload() {
 
         setIsReading(true);
         try {
-            const delimiter = extension === "tsv" ? "\t" : ",";
-            const parsed = parseDelimited((await selectedFile.text()).replace(/^\uFEFF/, ""), delimiter);
-            const headers = (parsed.shift() || []).map((value) => value.trim());
-            if (!headers.length || headers.some((value) => !value)) throw new Error("Every column needs a name in the first row.");
-            if (new Set(headers.map((value) => value.toLowerCase())).size !== headers.length) throw new Error("Column names must be unique.");
-            if (!parsed.length) throw new Error("Add at least one data row after the column headings.");
-
-            const normalizedRows = parsed.map((values, index) => {
-                if (values.length > headers.length && values.slice(headers.length).some((value) => value.trim())) {
-                    throw new Error(`Row ${index + 2} has more values than the ${headers.length} column headings.`);
-                }
-                return Array.from({ length: headers.length }, (_, column) => (values[column] || "").trim());
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+            const result = await apiRequest("/api/datasets/preview", {
+                method: "POST",
+                body: formData,
+                token: window.localStorage.getItem("adp-access-token"),
             });
-            const missingCells = normalizedRows.reduce((count, values) => count + values.filter((value) => !value).length, 0);
-            setPreview({ headers, rows: normalizedRows.slice(0, 10), rowCount: normalizedRows.length, missingCells, columnCount: headers.length, delimiter: extension.toUpperCase() });
+            setPreview({
+                headers: result.headers,
+                rows: result.preview_rows,
+                rowCount: result.row_count,
+                missingCells: result.missing_cells,
+                columnCount: result.column_count,
+                delimiter: extension.toUpperCase(),
+            });
         } catch (readError) {
             setError(readError.message || "The selected file could not be read.");
         } finally {
@@ -118,7 +88,7 @@ function Upload() {
                 <div>
                     <p className="dashboard-eyebrow">WORKSPACE / UPLOAD DATA</p>
                     <h1 id="upload-heading">Prepare a dataset</h1>
-                    <p>Choose a CSV or TSV file to check its columns and preview the first rows before continuing.</p>
+                    <p>Choose a supported data file to check its columns and preview the first rows before continuing.</p>
                 </div>
                 <Link className="reports-back-link" to="/dashboard">Back to dashboard</Link>
             </div>
@@ -126,8 +96,8 @@ function Upload() {
             <form className="upload-panel" onSubmit={saveDataset}>
                 <label className="upload-file-field" htmlFor="dataset-file">
                     <strong>Select a data file</strong>
-                    <span>CSV or TSV · up to 10 MB</span>
-                    <input id="dataset-file" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" onChange={(event) => readFile(event.target.files?.[0])} />
+                    <span>20 formats including CSV, Excel, JSON, Parquet, SAS and SQLite · up to 10 MB</span>
+                    <input id="dataset-file" type="file" accept={SUPPORTED_EXTENSIONS.map((extension) => `.${extension}`).join(",")} onChange={(event) => readFile(event.target.files?.[0])} />
                 </label>
                 {file && <p className="upload-selected-file">Selected: <strong>{file.name}</strong>{isReading ? " · Reading file…" : ""}</p>}
                 {error && <p className="upload-message upload-error" role="alert">{error}</p>}

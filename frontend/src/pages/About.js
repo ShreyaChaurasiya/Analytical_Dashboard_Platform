@@ -109,7 +109,7 @@ function About() {
         <div>
           <p className="about-eyebrow">C-DAC DELHI</p>
           <h2>Need institutional information?</h2>
-          <p>For official C-DAC information, use the contact directory and sources above. For platform access, contact your platform administrator.</p>
+          <p>For official C-DAC information, use the contact directory and sources above. For platform access, register or use the password-reset option on the sign-in page.</p>
         </div>
         <address>Plot no. 20, FC-33<br />Institutional Area, Jasola<br />New Delhi - 110025, India</address>
       </section>

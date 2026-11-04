@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { apiRequest } from "../api/client";
 import "./Home.css";
 
 const rainfall = [
@@ -207,27 +208,57 @@ const topicCards = [
 ];
 
 function Home() {
+    const location = useLocation();
     const [activeExample, setActiveExample] = useState("rainfall");
     const [activeViewIndex, setActiveViewIndex] = useState(0);
+    const [settingsError, setSettingsError] = useState(location.state?.settingsError || "");
+
+    useEffect(() => {
+        let isCurrent = true;
+        apiRequest("/api/settings", {
+            token: window.localStorage.getItem("adp-access-token"),
+        })
+            .then((settings) => {
+                if (!isCurrent) return;
+                setSettingsError("");
+                const sample = Object.prototype.hasOwnProperty.call(examples, settings.home_featured_sample)
+                    ? settings.home_featured_sample
+                    : "rainfall";
+                setActiveExample(sample);
+                setActiveViewIndex(0);
+            })
+            .catch((error) => {
+                if (isCurrent) setSettingsError(error.message || "Home preferences could not be loaded.");
+            });
+        return () => {
+            isCurrent = false;
+        };
+    }, [location.state?.settingsError]);
+
     const data = examples[activeExample];
     const view = data.views[activeViewIndex];
     const changeView = (direction) => setActiveViewIndex((current) => (current + direction + data.views.length) % data.views.length);
     const selectExample = (key) => {
         setActiveExample(key);
         setActiveViewIndex(0);
-        document.getElementById("home-preview")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const reduceMotion = document.documentElement.dataset.adpReduceMotion === "true";
+        document.getElementById("home-preview")?.scrollIntoView({
+            behavior: reduceMotion ? "auto" : "smooth",
+            block: "center",
+        });
     };
 
     return (
         <div className="home-page">
             <div className="home-main-content">
+                {settingsError && <p className="home-settings-error" role="alert">{settingsError}</p>}
                 <section className="home-hero" aria-labelledby="home-heading">
                     <div className="home-hero-copy">
                         <p className="home-eyebrow">A workspace for clear analysis</p>
                         <h1 id="home-heading">Make your data<br/>make sense.</h1>
                         <p className="home-hero-description">Prepare a dataset, explore what it shows, and present findings with enough context for others to understand.</p>
                         <div className="home-hero-actions"><Link className="home-button home-button-primary" to="/login">Login</Link><Link className="home-button home-button-secondary" to="/register">Get started</Link></div>
-                        <p className="home-credential-note"><strong>Have an issued user ID?</strong> Sign in with the credentials provided for your account.</p>
+                        <p className="home-credential-note"><strong>New to the platform?</strong> Register to receive your sign-in username and temporary password by email.</p>
                     </div>
                     <section className="home-preview" id="home-preview" aria-label="Interactive public data example">
                         <div className="home-preview-topbar"><strong>Data example · {data.title}</strong><span>{data.sourceLabel}</span></div>

@@ -24,3 +24,11 @@ class DatasetSummary(BaseModel):
 class DatasetDashboard(DatasetSummary):
     headers: list[str]
     preview_rows: list[list[str]]
+
+
+class DatasetFilePreview(BaseModel):
+    headers: list[str]
+    preview_rows: list[list[str]]
+    row_count: int
+    column_count: int
+    missing_cells: int

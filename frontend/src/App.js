@@ -10,8 +10,12 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Reports from "./pages/Reports";
+import Datasets from "./pages/Datasets";
+import Datasetdetails from "./pages/Datasetdetails";
+import Quality from "./pages/Quality";
 import About from "./pages/About";
 import Help from "./pages/Help";
+import Settings from "./pages/Settings";
 import "./App.css";
 
 function isAuthenticated() {
@@ -38,6 +42,11 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/datasets" element={<ProtectedRoute><Datasets /></ProtectedRoute>} />
+        <Route path="/datasets/:datasetId" element={<ProtectedRoute><Datasetdetails /></ProtectedRoute>} />
+        <Route path="/quality" element={<ProtectedRoute><Quality /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/dashboard/settings" element={<ProtectedRoute><Settings scope="dashboard" /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
         <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
       </Route>

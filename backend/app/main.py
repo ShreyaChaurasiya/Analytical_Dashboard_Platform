@@ -7,15 +7,20 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.datasets import router as datasets_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.analysis import router as analysis_router
-from app.api.routes.jobs import router as jobs_router
 from app.api.routes.quality import router as quality_router
 from app.api.routes.reports import router as reports_router
+from app.api.routes.settings import router as settings_router
 from app.core.config import settings
 from app.db.session import Base, engine
+from app.models.analysis import Analysis  # noqa: F401 - registers the table model
 from app.models.dataset import Dataset  # noqa: F401 - registers the table model
 from app.models.dataset_version import DatasetVersion  # noqa: F401 - registers the table model
+from app.models.dashboard_export import DashboardExport  # noqa: F401 - registers the table model
+from app.models.email_change_challenge import EmailChangeChallenge  # noqa: F401 - registers the table model
 from app.models.login_challenge import LoginChallenge # noqa: F401 - registers the table model
 from app.models.password_reset_challenge import PasswordResetChallenge # noqa: F401 - registers the table model
+from app.models.quality_issue import QualityIssue  # noqa: F401 - registers the table model
+from app.models.report import Report  # noqa: F401 - registers the table model
 from app.models.user import User # noqa: F401 - registers the table model
 
 app = FastAPI(title=settings.app_name)
@@ -63,6 +68,12 @@ def create_database_tables() -> None:
                 "ADD COLUMN IF NOT EXISTS missing_cells INTEGER"
             )
         )
+        connection.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS preferences JSON NOT NULL DEFAULT '{}'"
+            )
+        )
 @app.get("/api/Check_Status")
 def Health():
     return {"status": "ok"}
@@ -89,11 +100,6 @@ app.include_router(
     dependencies=[Depends(get_current_user)],
 )
 app.include_router(
-    jobs_router,
-    prefix="/api/jobs",
-    dependencies=[Depends(get_current_user)],
-)
-app.include_router(
     quality_router,
     prefix="/api/quality",
     dependencies=[Depends(get_current_user)],
@@ -101,5 +107,10 @@ app.include_router(
 app.include_router(
     reports_router,
     prefix="/api/reports",
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    settings_router,
+    prefix="/api/settings",
     dependencies=[Depends(get_current_user)],
 )

@@ -43,7 +43,25 @@ function LoginOtp() {
             window.localStorage.setItem("adp-access-token", result.access_token);
             window.localStorage.setItem("adp-authenticated", "true");
             window.dispatchEvent(new Event("adp-auth-changed"));
-            navigate(result.password_reset_required ? "/reset-password" : "/", { replace: true });
+            if (result.password_reset_required) {
+                navigate("/reset-password", { replace: true });
+                return;
+            }
+
+            try {
+                const preferences = await apiRequest("/api/settings", { token: result.access_token });
+                navigate(
+                    preferences.default_landing_page === "dashboard" ? "/dashboard" : "/",
+                    { replace: true },
+                );
+            } catch (settingsError) {
+                navigate("/", {
+                    replace: true,
+                    state: {
+                        settingsError: `Signed in, but your landing-page preference could not be loaded: ${settingsError.message}`,
+                    },
+                });
+            }
         } catch (submitError) {
             setError(submitError.message || "We could not verify that code. Please try again.");
         } finally {
