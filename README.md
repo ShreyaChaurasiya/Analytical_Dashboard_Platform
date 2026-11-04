@@ -17,7 +17,7 @@ This repository contains the React frontend and FastAPI backend for the Analytic
 1. Copy `backend/.env.example` to `backend/.env`.
 2. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, and `SMTP_PASSWORD` to the values from your email provider. Leave the username and password empty if your SMTP server does not require authentication.
 3. Use `SMTP_USE_TLS=true` for a STARTTLS connection (typically port 587), or set `SMTP_USE_TLS=false` and `SMTP_USE_SSL=true` for implicit TLS (typically port 465). Do not enable both.
-4. Set `EMAIL_FROM` to a sender address permitted by your SMTP provider.
+4. Set `EMAIL_FROM` to a sender address permitted by your SMTP provider. For Gmail, this must be the same Gmail address as `SMTP_USERNAME` (Gmail rejects `noreply@example.com`). Use a Google App Password, not your normal Gmail password.
 5. Set `JWT_SECRET_KEY` to a long, random value. Never commit `backend/.env` or share its secrets.
 6. Restart the backend after changing environment values.
 

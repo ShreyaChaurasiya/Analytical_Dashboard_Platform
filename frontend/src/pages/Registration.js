@@ -159,7 +159,7 @@ function Registration() {
                         <p className="registration-privacy-note">Do not enter government ID numbers or upload identity documents here.</p>
                     </details>
 
-                    <p className="registration-account-note">Your username and temporary password will be emailed after registration. Email delivery must be configured on the backend. Change the temporary password after your first sign in.</p>
+                    <p className="registration-account-note">Your username and temporary password will be emailed after registration. Sign in with those details, verify the email OTP, then change the temporary password before opening the dashboard.</p>
                     {error && <p className="registration-error" role="alert">{error}</p>}
                     <button className="registration-button" type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting…" : "Submit registration"}

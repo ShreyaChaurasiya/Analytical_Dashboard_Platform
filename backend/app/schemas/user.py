@@ -64,7 +64,7 @@ class RegistrationResponse(BaseModel):
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    username: str = Field(min_length=3, max_length=80)
+    username: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=8, max_length=128)
 
     @field_validator("username", mode="before")
