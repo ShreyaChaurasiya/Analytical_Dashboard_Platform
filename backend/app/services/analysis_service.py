@@ -1,5 +1,6 @@
 """Descriptive statistics and inferred column types."""
 
+import numpy as np
 import pandas as pd
 
 
@@ -48,8 +49,19 @@ def analyze_dataframe(data: pd.DataFrame) -> dict:
         inferred_type, numeric = _column_type(series)
 
         statistics = None
+        histogram = None
         if numeric is not None:
             numeric_data[str(column)] = numeric
+            bin_count = min(10, max(1, int(np.ceil(np.sqrt(len(numeric))))))
+            counts, edges = np.histogram(numeric.to_numpy(dtype=float), bins=bin_count)
+            histogram = [
+                {
+                    "start": float(edges[index]),
+                    "end": float(edges[index + 1]),
+                    "count": int(count),
+                }
+                for index, count in enumerate(counts)
+            ]
             statistics = {
                 "mean": round(float(numeric.mean()), 4),
                 "median": round(float(numeric.median()), 4),
@@ -62,10 +74,14 @@ def analyze_dataframe(data: pd.DataFrame) -> dict:
                     float(standard_deviation), 4
                 )
 
+        value_counts = non_missing.value_counts()
         top_values = [
             {"value": str(value), "count": int(count)}
-            for value, count in non_missing.value_counts().head(5).items()
+            for value, count in value_counts.head(5).items()
         ]
+        remaining_count = int(value_counts.iloc[5:].sum())
+        if remaining_count:
+            top_values.append({"value": "Other values", "count": remaining_count})
         columns.append(
             {
                 "name": str(column),
@@ -73,6 +89,7 @@ def analyze_dataframe(data: pd.DataFrame) -> dict:
                 "missing_count": missing_count,
                 "unique_count": int(non_missing.nunique()),
                 "statistics": statistics,
+                "histogram": histogram,
                 "top_values": top_values,
             }
         )

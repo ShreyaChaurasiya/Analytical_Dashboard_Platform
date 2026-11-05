@@ -13,7 +13,7 @@ from app.models.dataset import Dataset
 from app.models.quality_issue import QualityIssue
 from app.models.report import Report
 from app.models.user import User
-from app.schemas.report import ReportCreate, ReportSummary
+from app.schemas.report import ReportCreate, ReportPreview, ReportSummary
 from app.services.dataset_service import get_owned_dataset
 from app.services.report_service import generate_report
 from app.services.storage_service import (
@@ -149,6 +149,45 @@ def get_report(
 ) -> ReportSummary:
     report, dataset_name = _get_owned_report(db, report_id, current_user.id)
     return _report_response(report, dataset_name)
+
+
+@router.get("/reports/{report_id}/preview", response_model=ReportPreview)
+def preview_report(
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReportPreview:
+    report, dataset_name = _get_owned_report(db, report_id, current_user.id)
+    analysis = db.get(Analysis, report.analysis_id)
+    if analysis is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The analysis for this report is no longer available.",
+        )
+
+    issues = db.scalars(
+        select(QualityIssue)
+        .where(QualityIssue.analysis_id == analysis.id)
+        .order_by(QualityIssue.severity, QualityIssue.id)
+    ).all()
+    return ReportPreview(
+        **_report_response(report, dataset_name).model_dump(),
+        row_count=analysis.results["row_count"],
+        column_count=analysis.results["column_count"],
+        missing_cells=analysis.results["missing_cells"],
+        duplicate_rows=analysis.results["duplicate_rows"],
+        columns=analysis.results["columns"],
+        quality_issues=[
+            {
+                "issue_type": issue.issue_type,
+                "column_name": issue.column_name,
+                "severity": issue.severity,
+                "affected_rows": issue.affected_rows,
+                "description": issue.description,
+            }
+            for issue in issues
+        ],
+    )
 
 
 @router.get("/reports/{report_id}/download")

@@ -1,5 +1,16 @@
 export const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
+function clearInvalidSession() {
+    try {
+        window.localStorage.removeItem("adp-access-token");
+        window.localStorage.removeItem("adp-authenticated");
+    } catch {
+        // Continue by notifying the app even if browser storage is unavailable.
+    }
+    window.dispatchEvent(new Event("adp-auth-changed"));
+    window.dispatchEvent(new Event("adp-session-expired"));
+}
+
 export async function apiRequest(path, options = {}) {
     const { token, headers: requestHeaders, ...requestOptions } = options;
     const headers = new Headers(requestHeaders || {});
@@ -34,7 +45,12 @@ export async function apiRequest(path, options = {}) {
         const detail = Array.isArray(result.detail)
             ? result.detail.map((item) => item.msg).join(" ")
             : result.detail;
-        throw new Error(detail || "The request could not be completed.");
+        const requestError = new Error(detail || "The request could not be completed.");
+        requestError.status = response.status;
+        if (response.status === 401 && token) {
+            clearInvalidSession();
+        }
+        throw requestError;
     }
 
     return result;

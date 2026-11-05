@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import App from "./App";
 
@@ -11,6 +11,23 @@ test("redirects unauthenticated dashboard visitors to login", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Log in" })).toBeInTheDocument();
+});
+
+test("redirects to login when the active access token becomes invalid", async () => {
+  window.localStorage.setItem("adp-access-token", "expired-token");
+  render(
+    <MemoryRouter initialEntries={["/dashboard"]}>
+      <App />
+    </MemoryRouter>,
+  );
+
+  act(() => {
+    window.localStorage.removeItem("adp-access-token");
+    window.dispatchEvent(new Event("adp-session-expired"));
+  });
+
+  expect(await screen.findByRole("heading", { name: "Log in" })).toBeInTheDocument();
+  expect(screen.getByText("Your session expired or is no longer valid. Please sign in again.")).toBeInTheDocument();
 });
 
 test("saves main settings to the signed-in account", async () => {

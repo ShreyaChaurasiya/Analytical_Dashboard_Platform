@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
@@ -22,7 +23,8 @@ from app.services.storage_service import (
     delete_dashboard_export_file,
     delete_dataset_file,
     delete_report_file,
-    save_dataset_file,
+    save_dataset_file_stream,
+    DatasetUploadTooLargeError,
 )
 from app.services.validation_service import (
     SUPPORTED_FILE_TYPES,
@@ -33,12 +35,11 @@ from app.services.validation_service import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+MAX_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024
+MAX_PREVIEW_SIZE = 10 * 1024 * 1024
 
 
-async def _read_and_preview(
-    file: UploadFile,
-) -> tuple[str, str, bytes, DatasetPreview]:
+def _validate_upload_name(file: UploadFile) -> tuple[str, str]:
     original_filename = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1]
     if not original_filename or len(original_filename) > 255 or "." not in original_filename:
         raise HTTPException(
@@ -53,12 +54,18 @@ async def _read_and_preview(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This file format is not supported.",
         )
+    return original_filename, file_type
 
-    content = await file.read(MAX_UPLOAD_SIZE + 1)
-    if len(content) > MAX_UPLOAD_SIZE:
+
+async def _read_and_preview(
+    file: UploadFile,
+) -> tuple[str, str, bytes, DatasetPreview]:
+    original_filename, file_type = _validate_upload_name(file)
+    content = await file.read(MAX_PREVIEW_SIZE + 1)
+    if len(content) > MAX_PREVIEW_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Files must be 10 MB or smaller.",
+            detail="File previews are limited to 10 MB. Dataset uploads support files up to 2 GB.",
         )
     if not content:
         raise HTTPException(
@@ -100,10 +107,25 @@ async def upload_dataset(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> DatasetDashboard:
-    original_filename, file_type, content, preview = await _read_and_preview(file)
-
+    original_filename, file_type = _validate_upload_name(file)
     try:
-        stored_path = save_dataset_file(content, file_type)
+        file.file.seek(0)
+        stored_path, file_size = await asyncio.to_thread(
+            save_dataset_file_stream,
+            file.file,
+            file_type,
+            MAX_UPLOAD_SIZE,
+        )
+    except DatasetUploadTooLargeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Dataset files must be 2 GB or smaller.",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
     except OSError as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -115,16 +137,16 @@ async def upload_dataset(
         original_filename=original_filename,
         file_path=str(stored_path),
         file_type=file_type,
-        file_size=len(content),
+        file_size=file_size,
         owner_id=current_user.id,
         status="uploaded",
     )
     version = DatasetVersion(
         version_number=1,
         file_path=str(stored_path),
-        row_count=preview.row_count,
-        column_count=preview.column_count,
-        missing_cells=preview.missing_cells,
+        row_count=None,
+        column_count=None,
+        missing_cells=None,
         status="uploaded",
     )
     dataset.versions.append(version)
@@ -140,12 +162,12 @@ async def upload_dataset(
             file_size=dataset.file_size,
             status=dataset.status,
             created_at=dataset.created_at,
-            row_count=preview.row_count,
-            column_count=preview.column_count,
-            missing_cells=preview.missing_cells,
+            row_count=None,
+            column_count=None,
+            missing_cells=None,
             version_number=version.version_number,
-            headers=preview.headers,
-            preview_rows=preview.preview_rows,
+            headers=[],
+            preview_rows=[],
         )
         db.commit()
     except SQLAlchemyError as error:
@@ -202,11 +224,16 @@ def delete_dataset(
     ).all()
     dashboard_export_paths = [export.file_path for export in dashboard_exports]
     preferences = current_user.preferences or {}
+    dashboard_layouts = preferences.get("dashboard_layouts", {})
+    if isinstance(dashboard_layouts, dict):
+        dashboard_layouts = dict(dashboard_layouts)
+        dashboard_layouts.pop(str(dataset.id), None)
+    else:
+        dashboard_layouts = {}
+    updated_preferences = {**preferences, "dashboard_layouts": dashboard_layouts}
     if preferences.get("dashboard_default_dataset_id") == dataset.id:
-        current_user.preferences = {
-            **preferences,
-            "dashboard_default_dataset_id": None,
-        }
+        updated_preferences["dashboard_default_dataset_id"] = None
+    current_user.preferences = updated_preferences
     db.delete(dataset)
     for export in dashboard_exports:
         db.delete(export)

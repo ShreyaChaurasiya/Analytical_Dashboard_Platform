@@ -51,6 +51,9 @@ function Login() {
                 {location.state?.accountNotice && (
                     <p className="login-account-notice" role="status">{location.state.accountNotice}</p>
                 )}
+                {location.state?.sessionExpired && (
+                    <p className="login-account-notice" role="status">Your session expired or is no longer valid. Please sign in again.</p>
+                )}
                 <h1>Log in</h1>
                 <form onSubmit={handleSubmit} autoComplete="off">
                     <label>

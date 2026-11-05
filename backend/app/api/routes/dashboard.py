@@ -17,7 +17,12 @@ from app.models.dataset import Dataset
 from app.models.quality_issue import QualityIssue
 from app.models.report import Report
 from app.models.user import User
-from app.schemas.dashboard import DashboardExportCreate, DashboardExportSummary
+from app.schemas.dashboard import (
+    DashboardExportCreate,
+    DashboardExportSummary,
+    DashboardLayout,
+    DashboardLayoutUpdate,
+)
 from app.schemas.dataset import DatasetDashboard
 from app.services.dataset_service import dataset_dashboard, dataset_summary, get_owned_dataset
 from app.services.storage_service import (
@@ -41,6 +46,95 @@ def get_dashboard(
 ) -> DatasetDashboard:
     dataset = get_owned_dataset(db, dataset_id, current_user.id)
     return dataset_dashboard(dataset)
+
+
+def _default_dashboard_layout(dataset: Dataset) -> dict:
+    return {
+        "title": dataset.name[:120],
+        "visible_widgets": [
+            "value-distribution",
+            "numeric-profile",
+            "missing-values",
+            "column-overview",
+            "insights",
+            "correlations",
+        ],
+        "category_column": None,
+        "numeric_column": None,
+        "distribution_chart": "bar",
+    }
+
+
+@router.get(
+    "/datasets/{dataset_id}/layout",
+    response_model=DashboardLayout,
+)
+def get_dashboard_layout(
+    dataset_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DashboardLayout:
+    dataset = get_owned_dataset(db, dataset_id, current_user.id)
+    preferences = current_user.preferences or {}
+    layouts = preferences.get("dashboard_layouts", {})
+    saved_layout = layouts.get(str(dataset.id), {}) if isinstance(layouts, dict) else {}
+    return DashboardLayout.model_validate(
+        {**_default_dashboard_layout(dataset), **saved_layout}
+    )
+
+
+@router.put(
+    "/datasets/{dataset_id}/layout",
+    response_model=DashboardLayout,
+)
+def update_dashboard_layout(
+    dataset_id: int,
+    update: DashboardLayoutUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DashboardLayout:
+    dataset = get_owned_dataset(db, dataset_id, current_user.id)
+    analysis = db.scalar(
+        select(Analysis)
+        .where(Analysis.dataset_id == dataset.id)
+        .order_by(Analysis.created_at.desc(), Analysis.id.desc())
+        .limit(1)
+    )
+    columns = analysis.results.get("columns", []) if analysis else []
+    column_types = {
+        column.get("name"): column.get("inferred_type")
+        for column in columns
+        if isinstance(column, dict)
+    }
+    if update.category_column and column_types.get(update.category_column) not in {"categorical", "boolean"}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Choose a categorical or boolean column for the value distribution.",
+        )
+    if update.numeric_column and column_types.get(update.numeric_column) != "numeric":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Choose a numeric column for the numeric profile.",
+        )
+
+    preferences = dict(current_user.preferences or {})
+    saved_layouts = preferences.get("dashboard_layouts", {})
+    layouts = dict(saved_layouts) if isinstance(saved_layouts, dict) else {}
+    layout = update.model_dump()
+    layouts[str(dataset.id)] = layout
+    preferences["dashboard_layouts"] = layouts
+    current_user.preferences = preferences
+    try:
+        db.commit()
+        db.refresh(current_user)
+    except SQLAlchemyError as error:
+        db.rollback()
+        logger.exception("Could not save dashboard layout for dataset %s.", dataset.id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="The dashboard layout could not be saved.",
+        ) from error
+    return DashboardLayout.model_validate(layout)
 
 
 def _csv_value(value: str) -> str:

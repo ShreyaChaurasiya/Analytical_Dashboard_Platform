@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import AuthLayout from "./layouts/AuthLayout";
@@ -27,7 +28,26 @@ function isAuthenticated() {
 }
 
 function ProtectedRoute({ children }) {
-  return isAuthenticated() ? children : <Navigate to="/login" replace />;
+  const [authenticated, setAuthenticated] = useState(isAuthenticated);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      const hasToken = isAuthenticated();
+      setAuthenticated(hasToken);
+      setSessionExpired(!hasToken);
+    };
+    window.addEventListener("adp-session-expired", handleSessionExpired);
+    window.addEventListener("storage", handleSessionExpired);
+    return () => {
+      window.removeEventListener("adp-session-expired", handleSessionExpired);
+      window.removeEventListener("storage", handleSessionExpired);
+    };
+  }, []);
+
+  return authenticated
+    ? children
+    : <Navigate to="/login" replace state={sessionExpired ? { sessionExpired: true } : undefined} />;
 }
 
 function PublicOnlyRoute({ children }) {

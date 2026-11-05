@@ -10,6 +10,8 @@ from app.schemas.dataset import DatasetDashboard, DatasetSummary
 from app.services.storage_service import get_dataset_file_path
 from app.services.validation_service import parse_delimited_file
 
+MAX_INLINE_PREVIEW_SIZE = 10 * 1024 * 1024
+
 
 def get_owned_dataset(db: Session, dataset_id: int, owner_id: int) -> Dataset:
     dataset = db.scalar(
@@ -55,7 +57,13 @@ def dataset_dashboard(dataset: Dataset) -> DatasetDashboard:
         )
     try:
         file_path = get_dataset_file_path(version.file_path)
-        preview = parse_delimited_file(file_path.read_bytes(), dataset.file_type or "")
+        if not file_path.is_file():
+            raise OSError("The stored dataset file does not exist.")
+        preview = (
+            parse_delimited_file(file_path.read_bytes(), dataset.file_type or "")
+            if file_path.stat().st_size <= MAX_INLINE_PREVIEW_SIZE
+            else None
+        )
     except (OSError, ValueError) as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -64,12 +72,20 @@ def dataset_dashboard(dataset: Dataset) -> DatasetDashboard:
 
     response = dataset_summary(dataset).model_dump()
     response.update(
-        headers=preview.headers,
-        preview_rows=preview.preview_rows,
-        row_count=preview.row_count,
-        column_count=preview.column_count,
+        headers=preview.headers if preview else [],
+        preview_rows=preview.preview_rows if preview else [],
+        row_count=(
+            version.row_count
+            if version.row_count is not None
+            else (preview.row_count if preview else None)
+        ),
+        column_count=(
+            version.column_count
+            if version.column_count is not None
+            else (preview.column_count if preview else None)
+        ),
         missing_cells=version.missing_cells
         if version.missing_cells is not None
-        else preview.missing_cells,
+        else (preview.missing_cells if preview else None),
     )
     return DatasetDashboard(**response)
