@@ -214,9 +214,20 @@ function Home() {
     const [settingsError, setSettingsError] = useState(location.state?.settingsError || "");
 
     useEffect(() => {
+        let token = null;
+        try {
+            token = window.localStorage.getItem("adp-access-token");
+        } catch {
+            token = null;
+        }
+        if (!token) {
+            setSettingsError(location.state?.settingsError || "");
+            return undefined;
+        }
+
         let isCurrent = true;
         apiRequest("/api/settings", {
-            token: window.localStorage.getItem("adp-access-token"),
+            token,
         })
             .then((settings) => {
                 if (!isCurrent) return;
@@ -228,7 +239,9 @@ function Home() {
                 setActiveViewIndex(0);
             })
             .catch((error) => {
-                if (isCurrent) setSettingsError(error.message || "Home preferences could not be loaded.");
+                if (isCurrent) {
+                    setSettingsError(error.status === 401 ? "" : (error.message || "Home preferences could not be loaded."));
+                }
             });
         return () => {
             isCurrent = false;

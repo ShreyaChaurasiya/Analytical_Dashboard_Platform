@@ -1,14 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 function PrimarySidebar({ includeSettings = true, includeSettingsCategories = false }) {
     const [isOpen, setIsOpen] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        try { return Boolean(window.localStorage.getItem("adp-access-token")); }
+        catch { return false; }
+    });
+    useEffect(() => {
+        const refreshAuthState = () => {
+            try { setIsAuthenticated(Boolean(window.localStorage.getItem("adp-access-token"))); }
+            catch { setIsAuthenticated(false); }
+        };
+        window.addEventListener("storage", refreshAuthState);
+        window.addEventListener("adp-auth-changed", refreshAuthState);
+        return () => {
+            window.removeEventListener("storage", refreshAuthState);
+            window.removeEventListener("adp-auth-changed", refreshAuthState);
+        };
+    }, []);
+
     const links = [
         { label: "Home", to: "/", end: true },
-        { label: "Dashboard", to: "/dashboard" },
+        ...(isAuthenticated ? [{ label: "Dashboard", to: "/dashboard" }] : []),
         { label: "About", to: "/about" },
         { label: "Help", to: "/help" },
-        ...(includeSettings ? [{ label: "Settings", to: "/settings" }] : []),
+        ...(includeSettings && isAuthenticated ? [{ label: "Settings", to: "/settings" }] : []),
     ];
 
     return (

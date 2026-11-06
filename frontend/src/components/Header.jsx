@@ -78,7 +78,9 @@ function Header({ variant = "app" }) {
                     if (isCurrent) applySettings(settings);
                 })
                 .catch((error) => {
-                    if (isCurrent) setSettingsError(error.message || "Account display settings could not be loaded.");
+                    if (isCurrent && error.status !== 401) {
+                        setSettingsError(error.message || "Account display settings could not be loaded.");
+                    }
                 });
         }
 

@@ -110,6 +110,50 @@ def _otp_digest(code: str) -> str:
     return hmac.new(secret.encode("utf-8"), code.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+def _verify_email_challenge(
+    db: Session,
+    challenge_model: type[LoginChallenge] | type[PasswordResetChallenge],
+    challenge_id: str,
+    code: str,
+    *,
+    purpose: str,
+) -> User:
+    """Validate and consume a login or password-reset email challenge."""
+    invalid_message = f"This {purpose} code is invalid or has expired."
+    challenge = db.scalar(
+        select(challenge_model)
+        .where(challenge_model.id == challenge_id)
+        .with_for_update()
+    )
+    if challenge is None or challenge.consumed_at is not None:
+        raise ValueError(invalid_message)
+
+    now = datetime.now(timezone.utc)
+    expires_at = challenge.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= now or challenge.attempts >= 5:
+        challenge.consumed_at = now
+        db.commit()
+        raise ValueError(invalid_message)
+
+    if not hmac.compare_digest(challenge.code_hash, _otp_digest(code)):
+        challenge.attempts += 1
+        if challenge.attempts >= 5:
+            challenge.consumed_at = now
+        db.commit()
+        raise ValueError(f"The {purpose} code is incorrect.")
+
+    user = db.get(User, challenge.user_id)
+    if user is None or user.status != RegistrationStatus.APPROVED.value:
+        challenge.consumed_at = now
+        db.commit()
+        raise ValueError(invalid_message)
+
+    challenge.consumed_at = now
+    return user
+
+
 def _mask_email(email: str) -> str:
     local, domain = email.split("@", 1)
     visible = local[:1]
@@ -148,37 +192,13 @@ def start_login_challenge(db: Session, user: User) -> tuple[str, str]:
 
 
 def verify_login_code(db: Session, challenge_id: str, code: str) -> User:
-    challenge = db.scalar(
-        select(LoginChallenge)
-        .where(LoginChallenge.id == challenge_id)
-        .with_for_update()
+    user = _verify_email_challenge(
+        db,
+        LoginChallenge,
+        challenge_id,
+        code,
+        purpose="sign-in",
     )
-    if challenge is None or challenge.consumed_at is not None:
-        raise ValueError("This sign-in code is invalid or has expired.")
-
-    now = datetime.now(timezone.utc)
-    expires_at = challenge.expires_at
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if expires_at <= now or challenge.attempts >= 5:
-        challenge.consumed_at = now
-        db.commit()
-        raise ValueError("This sign-in code is invalid or has expired.")
-
-    if not hmac.compare_digest(challenge.code_hash, _otp_digest(code)):
-        challenge.attempts += 1
-        if challenge.attempts >= 5:
-            challenge.consumed_at = now
-        db.commit()
-        raise ValueError("The sign-in code is incorrect.")
-
-    user = db.get(User, challenge.user_id)
-    if user is None or user.status != RegistrationStatus.APPROVED.value:
-        challenge.consumed_at = now
-        db.commit()
-        raise ValueError("This sign-in code is invalid or has expired.")
-
-    challenge.consumed_at = now
     db.commit()
     return user
 
@@ -327,37 +347,14 @@ def complete_password_reset(
     code: str,
     new_password: str,
 ) -> None:
-    challenge = db.scalar(
-        select(PasswordResetChallenge)
-        .where(PasswordResetChallenge.id == challenge_id)
-        .with_for_update()
+    user = _verify_email_challenge(
+        db,
+        PasswordResetChallenge,
+        challenge_id,
+        code,
+        purpose="password reset",
     )
-    if challenge is None or challenge.consumed_at is not None:
-        raise ValueError("This password reset code is invalid or has expired.")
-
     now = datetime.now(timezone.utc)
-    expires_at = challenge.expires_at
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if expires_at <= now or challenge.attempts >= 5:
-        challenge.consumed_at = now
-        db.commit()
-        raise ValueError("This password reset code is invalid or has expired.")
-
-    if not hmac.compare_digest(challenge.code_hash, _otp_digest(code)):
-        challenge.attempts += 1
-        if challenge.attempts >= 5:
-            challenge.consumed_at = now
-        db.commit()
-        raise ValueError("The password reset code is incorrect.")
-
-    user = db.get(User, challenge.user_id)
-    if user is None or user.status != RegistrationStatus.APPROVED.value:
-        challenge.consumed_at = now
-        db.commit()
-        raise ValueError("This password reset code is invalid or has expired.")
-
-    challenge.consumed_at = now
     user.password_hash = hash_password(new_password)
     user.must_reset_password = False
     user.temporary_password_expires_at = None

@@ -58,7 +58,7 @@ function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
@@ -67,8 +67,8 @@ function App() {
         <Route path="/quality" element={<ProtectedRoute><Quality /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/dashboard/settings" element={<ProtectedRoute><Settings scope="dashboard" /></ProtectedRoute>} />
-        <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
-        <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/about" element={<About />} />
       </Route>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />

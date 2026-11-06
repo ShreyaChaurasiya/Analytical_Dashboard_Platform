@@ -12,6 +12,7 @@ from app.api.routes.reports import router as reports_router
 from app.api.routes.settings import router as settings_router
 from app.core.config import settings
 from app.db.session import Base, engine
+from app.models.audit import AuditLog  # noqa: F401 - registers the table model
 from app.models.analysis import Analysis  # noqa: F401 - registers the table model
 from app.models.dataset import Dataset  # noqa: F401 - registers the table model
 from app.models.dataset_version import DatasetVersion  # noqa: F401 - registers the table model

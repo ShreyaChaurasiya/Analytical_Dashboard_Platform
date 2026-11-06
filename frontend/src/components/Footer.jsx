@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import { isSignedIn } from "./RequireAuth";
 
 function Footer({ variant }) {
     const year = new Date().getFullYear();
+    const signedIn = isSignedIn();
 
     return (
         <footer className={`site-footer site-footer-${variant}`}>
@@ -14,9 +16,9 @@ function Footer({ variant }) {
 
                 <nav className="site-footer-column" aria-label="Platform links">
                     <h2>Platform</h2>
-                    <Link to="/dashboard">Dashboard</Link>
-                    <Link to="/upload">Upload dataset</Link>
-                    <Link to="/reports">Reports</Link>
+                    {signedIn && <Link to="/dashboard">Dashboard</Link>}
+                    {signedIn && <Link to="/upload">Upload dataset</Link>}
+                    {signedIn && <Link to="/reports">Reports</Link>}
                 </nav>
 
                 <nav className="site-footer-column" aria-label="Resources">

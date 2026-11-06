@@ -11,9 +11,23 @@ const initialForm = {
     organization: "",
     jobTitle: "",
     address: "",
-    identityType: "",
-    identityNumber: "",
 };
+
+function RegistrationIntro() {
+    return (
+        <aside className="registration-aside" aria-label="Registration steps">
+            <p className="registration-aside-kicker">Analytical Dashboard Platform</p>
+            <h2>Set up your account.</h2>
+            <p className="registration-aside-copy">A few details help us create your user profile and send your sign-in credentials securely.</p>
+            <ol className="registration-steps">
+                <li><span>01</span><div><strong>Your details</strong><small>Contact information for your account</small></div></li>
+                <li><span>02</span><div><strong>Organization profile</strong><small>Only for company accounts</small></div></li>
+                <li><span>03</span><div><strong>Secure sign-in</strong><small>Verify your email, then change the temporary password</small></div></li>
+            </ol>
+            <p className="registration-aside-note">Date of birth and address are optional.</p>
+        </aside>
+    );
+}
 
 function Registration() {
     const navigate = useNavigate();
@@ -48,8 +62,6 @@ function Registration() {
             organization: form.organization.trim() || null,
             jobTitle: form.jobTitle.trim() || null,
             address: form.address.trim() || null,
-            identityType: form.identityType || null,
-            identityNumber: form.identityNumber.trim() || null,
         };
 
         try {
@@ -68,44 +80,58 @@ function Registration() {
     if (submitted) {
         return (
             <main className="registration-page">
-                <section className="registration-card registration-success" aria-labelledby="registration-success-heading">
-                    <div className="registration-success-icon" aria-hidden="true">✓</div>
-                    <p className="login-eyebrow">REGISTRATION RECEIVED</p>
-                    <h1 id="registration-success-heading">Thanks, {form.fullName.trim().split(" ")[0]}.</h1>
-                    <p className="login-description" role="status">Your account is ready. Check {form.email.trim()} for your username and temporary password. The temporary password expires after 24 hours; change it after signing in.</p>
-                    <Link className="registration-button registration-button-link" to="/login">Go to login now</Link>
-                </section>
+                <div className="registration-shell registration-shell-success">
+                    <RegistrationIntro />
+                    <section className="registration-card registration-success" aria-labelledby="registration-success-heading">
+                        <div className="registration-success-icon" aria-hidden="true">✓</div>
+                        <p className="registration-eyebrow">REGISTRATION RECEIVED</p>
+                        <h1 id="registration-success-heading">Thanks, {form.fullName.trim().split(" ")[0]}.</h1>
+                        <p className="login-description" role="status">Your registration was submitted. Check {form.email.trim()} for your username and temporary password. Sign in, verify the email code, and change the temporary password before opening the dashboard.</p>
+                        <Link className="registration-button registration-button-link" to="/login">Go to login now</Link>
+                    </section>
+                </div>
             </main>
         );
     }
 
     return (
         <main className="registration-page">
+          <div className="registration-shell">
+            <RegistrationIntro />
             <section className="registration-card" aria-labelledby="registration-heading">
                 <header className="registration-header">
-                    <h1 id="registration-heading">Create your account</h1>
-                    <p className="login-description"> Fields marked <span aria-hidden="true">*</span> are required.</p>
+                    <p className="registration-eyebrow">ACCOUNT REGISTRATION</p>
+                    <div className="registration-title-row">
+                        <div>
+                            <h1 id="registration-heading">Create your account</h1>
+                            <p className="login-description">Enter your details to request a user account.</p>
+                        </div>
+                        <p className="registration-required-note"><span aria-hidden="true">*</span> Required</p>
+                    </div>
                 </header>
 
                 <form className="registration-form" onSubmit={handleSubmit}>
                     <fieldset className="registration-account-type">
-                        <legend>Who will use the platform?</legend>
+                        <legend className="registration-section-title">Account type</legend>
+                        <p className="registration-section-copy">Choose how you will use the platform.</p>
                         <div className="registration-choice-row">
                             <label className={`registration-choice${form.accountType === "individual" ? " is-selected" : ""}`}>
                                 <input type="radio" name="accountType" value="individual" checked={form.accountType === "individual"} onChange={updateField} required />
-                                <span className="registration-choice-icon" aria-hidden="true">◉</span>
-                                <span><strong>Individual</strong><small>Register for yourself</small></span>
+                                <span className="registration-choice-copy"><strong>Individual</strong><small>Personal account for your own analysis work</small></span>
                             </label>
                             <label className={`registration-choice${form.accountType === "organization" ? " is-selected" : ""}`}>
                                 <input type="radio" name="accountType" value="organization" checked={form.accountType === "organization"} onChange={updateField} />
-                                <span className="registration-choice-icon" aria-hidden="true">▦</span>
-                                <span><strong>Company</strong><small>Register for an organization</small></span>
+                                <span className="registration-choice-copy"><strong>Company</strong><small>Account for an organization or business</small></span>
                             </label>
                         </div>
                     </fieldset>
 
                     <div className="registration-fields">
-                        <label className="registration-field registration-field-wide" htmlFor="registration-name">
+                        <div className="registration-fields-heading">
+                            <h2>Your details</h2>
+                            <p>We’ll use these details for account communication.</p>
+                        </div>
+                        <label className="registration-field" htmlFor="registration-name">
                             <span className="registration-field-label">Full name <span aria-hidden="true">*</span></span>
                             <input id="registration-name" name="fullName" autoComplete="name" value={form.fullName} onChange={updateField} placeholder="Your full name" maxLength={120} required />
                         </label>
@@ -123,6 +149,10 @@ function Registration() {
                         </label>
                         {form.accountType === "organization" && (
                             <>
+                                <div className="registration-fields-heading registration-fields-heading-spaced">
+                                    <h2>Organization profile</h2>
+                                    <p>Tell us where you work and the role you serve.</p>
+                                </div>
                                 <label className="registration-field" htmlFor="registration-company">
                                     <span className="registration-field-label">Company name <span aria-hidden="true">*</span></span>
                                     <input id="registration-company" name="organization" autoComplete="organization" value={form.organization} onChange={updateField} placeholder="Organization name" maxLength={160} required />
@@ -139,27 +169,10 @@ function Registration() {
                         </label>
                     </div>
 
-                    <details className="registration-identity">
-                        <summary>Identity details <span>Optional · only add if your organization requires it</span></summary>
-                        <div className="registration-fields registration-identity-fields">
-                            <label className="registration-field" htmlFor="registration-identity-type">
-                                Document type
-                                <select id="registration-identity-type" name="identityType" value={form.identityType} onChange={updateField}>
-                                    <option value="">Select document type</option>
-                                    <option value="employee_id">Employee ID</option>
-                                    <option value="student_id">Student ID</option>
-                                    <option value="other">Other organization ID</option>
-                                </select>
-                            </label>
-                            <label className="registration-field" htmlFor="registration-identity-number">
-                                Document number
-                                <input id="registration-identity-number" name="identityNumber" value={form.identityNumber} onChange={updateField} placeholder="Enter ID number" maxLength={80} autoComplete="off" />
-                            </label>
-                        </div>
-                        <p className="registration-privacy-note">Do not enter government ID numbers or upload identity documents here.</p>
-                    </details>
-
-                    <p className="registration-account-note">Your username and temporary password will be emailed after registration. Sign in with those details, verify the email OTP, then change the temporary password before opening the dashboard.</p>
+                    <div className="registration-account-note">
+                        <strong>What happens next</strong>
+                        <p>Your username and temporary password will be emailed after registration. Sign in with those details, verify the email code, then change the temporary password before opening the dashboard.</p>
+                    </div>
                     {error && <p className="registration-error" role="alert">{error}</p>}
                     <button className="registration-button" type="submit" disabled={isSubmitting}>
                         {isSubmitting ? "Submitting…" : "Submit registration"}
@@ -169,6 +182,7 @@ function Registration() {
 
                 <p className="registration-signin">Already have an account? <Link to="/login">Sign in</Link></p>
             </section>
+          </div>
         </main>
     );
 }

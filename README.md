@@ -50,3 +50,17 @@ The registration and login screens use the backend authentication API.
 - Main preferences (light/dark theme, text size, high contrast, reduced motion, post-sign-in landing page, and Home featured public-data example) and separate dashboard defaults (dataset, view, time range, and report format) are saved per user in PostgreSQL through the authenticated `/api/settings` endpoint. Existing accounts receive defaults automatically.
 - Original uploaded dataset files are not currently exposed as downloads. Report and dashboard files are stored on the server and copied to the user's device when downloaded; deleting a server copy does not delete the device copy.
 - The Privacy & data section lists account-owned datasets and requires a separate confirmation before deleting one; deletion removes its versions, analyses, quality findings, generated report files, and saved dashboard summaries. Users can also permanently delete their account after re-entering their password and account name. Account deletion removes associated database records and server-side files; previously downloaded files remain on the user's device.
+
+## Run the backend locally
+
+Open PowerShell in the repository, then run:
+
+```powershell
+cd backend
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+The health endpoint is `http://127.0.0.1:8000/api/Check_Status`; API documentation is at `http://127.0.0.1:8000/docs`.

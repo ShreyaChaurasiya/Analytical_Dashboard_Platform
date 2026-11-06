@@ -1,6 +1,7 @@
 # Python virtual environment
 backend/.venv/
 backend/.data/
+backend/data/uploads/
 
 # Python cache
 __pycache__/
