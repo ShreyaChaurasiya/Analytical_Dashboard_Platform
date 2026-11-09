@@ -214,10 +214,11 @@ function Home() {
     const [settingsError, setSettingsError] = useState(location.state?.settingsError || "");
 
     useEffect(() => {
+        const token = window.localStorage.getItem("adp-access-token");
+        if (!token) return undefined;
+
         let isCurrent = true;
-        apiRequest("/api/settings", {
-            token: window.localStorage.getItem("adp-access-token"),
-        })
+        apiRequest("/api/settings", { token })
             .then((settings) => {
                 if (!isCurrent) return;
                 setSettingsError("");

@@ -60,7 +60,7 @@ DEFAULT_PREFERENCES = {
     "text_size": "default",
     "contrast_mode": "standard",
     "reduce_motion": False,
-    "default_landing_page": "home",
+    "default_landing_page": "dashboard",
     "home_featured_sample": "rainfall",
     "dashboard_default_dataset_id": None,
     "dashboard_analysis_view": "overview",

@@ -129,7 +129,7 @@ class UserSettingsResponse(BaseModel):
     text_size: TextSize = "default"
     contrast_mode: ContrastMode = "standard"
     reduce_motion: bool = False
-    default_landing_page: LandingPage = "home"
+    default_landing_page: LandingPage = "dashboard"
     home_featured_sample: HomeSample = "rainfall"
     dashboard_default_dataset_id: int | None = None
     dashboard_analysis_view: AnalysisView = "overview"

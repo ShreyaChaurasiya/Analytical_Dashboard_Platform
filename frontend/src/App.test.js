@@ -2,6 +2,18 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { MemoryRouter } from "react-router-dom";
 import App from "./App";
 
+test("shows the public landing page to visitors who are not signed in", () => {
+  window.localStorage.clear();
+  render(
+    <MemoryRouter initialEntries={["/"]}>
+      <App />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("heading", { name: /Make your data make sense/i })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Get started" })).toHaveAttribute("href", "/register");
+});
+
 test("redirects unauthenticated dashboard visitors to login", () => {
   window.localStorage.clear();
   render(
@@ -11,6 +23,21 @@ test("redirects unauthenticated dashboard visitors to login", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Log in" })).toBeInTheDocument();
+});
+
+test.each([
+  ["/about", "Make analysis easier to understand."],
+  ["/help", "Move from a file to a clear finding."],
+])("allows visitors to open the public %s page without signing in", (path, heading) => {
+  window.localStorage.clear();
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <App />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Log in" })).not.toBeInTheDocument();
 });
 
 test("redirects to login when the active access token becomes invalid", async () => {

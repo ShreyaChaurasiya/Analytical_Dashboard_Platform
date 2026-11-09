@@ -95,10 +95,6 @@ function Login() {
                     </button>
                 </form>
 
-                <p className="login-note">
-                    By continuing, you agree to the Privacy Policy &amp; Cookie Policy.
-                </p>
-
                 <div className="login-register-wrapper">
                     <p className="login-register">
                         New user?{" "}

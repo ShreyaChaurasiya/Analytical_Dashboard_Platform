@@ -139,7 +139,7 @@ function ForgetPassword() {
 
                         {step === "password" && (
                             <form onSubmit={resetPassword}>
-                                <p className="login-signup">Choose a new password. The code is checked when you submit.</p>
+                                <p className="login-signup">Choose a new password.</p>
                                 <label>
                                     New password
                                     <input
